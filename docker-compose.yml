@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:14.8
+    container_name: shift_report_postgres_test
+    environment:
+      POSTGRES_DB: sh_r_test
+      POSTGRES_USER: sh_r_user
+      POSTGRES_PASSWORD: sh_r_pass
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sh_r_user", "-d", "sh_r_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
