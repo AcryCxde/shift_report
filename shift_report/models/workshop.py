@@ -1,24 +1,40 @@
-from django.db.models import CharField, IntegerField, Model
+from django.db.models import (BooleanField, CharField, Model,
+                              PositiveIntegerField, TextField)
 
 
 class Workshop(Model):
     """
     Цех
 
-    sectors: list[Sector] - участки внутри цеха
+    Верхний уровень иерархии подразделений.
+    Цех содержит участки (Sector).
     """
+
     class Meta:
         verbose_name = 'Цех'
         verbose_name_plural = 'Цеха'
+        ordering = ['number']
 
-    number = IntegerField(
+    number = PositiveIntegerField(
         'Номер цеха',
-        primary_key=True,
+        unique=True,
     )
 
     name = CharField(
-        'Название цеха'
+        'Название цеха',
+        max_length=255,
+    )
+
+    description = TextField(
+        'Описание',
+        blank=True,
+        default='',
+    )
+
+    is_active = BooleanField(
+        'Активен',
+        default=True,
     )
 
     def __str__(self):
-        return f'Цех №{self.number}'
+        return f'Цех №{self.number} - {self.name}'

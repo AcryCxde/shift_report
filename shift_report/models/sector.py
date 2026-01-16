@@ -1,34 +1,47 @@
-from django.db.models import (CASCADE, CharField, ForeignKey, IntegerField,
-                              Model)
-
-from .workshop import Workshop
+from django.db.models import (CASCADE, BooleanField, CharField, ForeignKey,
+                              Model, PositiveIntegerField, TextField)
 
 
 class Sector(Model):
     """
     Участок
 
-    workshop: Workshop - связь с определённым цехом
+    Средний уровень иерархии подразделений.
+    Участок принадлежит цеху и содержит рабочие места (Workplace).
     """
+
     class Meta:
         verbose_name = 'Участок'
         verbose_name_plural = 'Участки'
-
-    number = IntegerField(
-        'Номер участка',
-        primary_key=True,
-    )
-
-    name = CharField(
-        'Название участка'
-    )
+        ordering = ['workshop__number', 'number']
+        unique_together = [['workshop', 'number']]
 
     workshop = ForeignKey(
-        Workshop,
+        'shift_report.Workshop',
         verbose_name='Цех',
         related_name='sectors',
         on_delete=CASCADE,
     )
 
+    number = PositiveIntegerField(
+        'Номер участка',
+    )
+
+    name = CharField(
+        'Название участка',
+        max_length=255,
+    )
+
+    description = TextField(
+        'Описание',
+        blank=True,
+        default='',
+    )
+
+    is_active = BooleanField(
+        'Активен',
+        default=True,
+    )
+
     def __str__(self):
-        return f'Участок №{self.number}'
+        return f'Участок №{self.number} ({self.workshop})'
