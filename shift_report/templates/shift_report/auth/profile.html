@@ -1,0 +1,76 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Профиль — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">
+                    <i class="bi bi-person-circle me-2"></i>
+                    Профиль
+                </h1>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="display-1 text-primary mb-3">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <h2 class="h4">{{ user.get_full_name }}</h2>
+                    <span class="badge bg-secondary fs-6">{{ user.get_role_display }}</span>
+                </div>
+
+                <hr>
+
+                <dl class="row">
+                    <dt class="col-sm-5">Табельный номер:</dt>
+                    <dd class="col-sm-7">
+                        <code class="fs-5">{{ user.personnel_number }}</code>
+                    </dd>
+
+                    <dt class="col-sm-5">Роль:</dt>
+                    <dd class="col-sm-7">{{ user.get_role_display }}</dd>
+
+                    {% if user.workplace %}
+                    <dt class="col-sm-5">Рабочее место:</dt>
+                    <dd class="col-sm-7">{{ user.workplace }}</dd>
+                    {% endif %}
+
+                    {% if user.sector %}
+                    <dt class="col-sm-5">Участок:</dt>
+                    <dd class="col-sm-7">{{ user.sector }}</dd>
+                    {% endif %}
+
+                    {% if user.workshop %}
+                    <dt class="col-sm-5">Цех:</dt>
+                    <dd class="col-sm-7">{{ user.workshop }}</dd>
+                    {% endif %}
+
+                    <dt class="col-sm-5">Дата регистрации:</dt>
+                    <dd class="col-sm-7">{{ user.date_joined|date:"d.m.Y H:i" }}</dd>
+
+                    {% if user.last_login %}
+                    <dt class="col-sm-5">Последний вход:</dt>
+                    <dd class="col-sm-7">{{ user.last_login|date:"d.m.Y H:i" }}</dd>
+                    {% endif %}
+                </dl>
+
+                <hr>
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'change_pin' %}" class="btn btn-outline-primary btn-touch">
+                        <i class="bi bi-key me-2"></i>
+                        Сменить PIN-код
+                    </a>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-touch">
+                        <i class="bi bi-box-arrow-right me-2"></i>
+                        Выйти из системы
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

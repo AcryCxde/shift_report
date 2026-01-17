@@ -1,0 +1,85 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Смена PIN-кода — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">
+                    <i class="bi bi-key me-2"></i>
+                    Смена PIN-кода
+                </h1>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- Текущий PIN -->
+                    <div class="mb-4">
+                        <label for="id_current_pin" class="form-label fw-bold">
+                            Текущий PIN-код
+                        </label>
+                        {{ form.current_pin }}
+                        {% if form.current_pin.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.current_pin.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Новый PIN -->
+                    <div class="mb-4">
+                        <label for="id_new_pin" class="form-label fw-bold">
+                            Новый PIN-код
+                        </label>
+                        {{ form.new_pin }}
+                        {% if form.new_pin.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.new_pin.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <div class="form-text">От 4 до 6 цифр</div>
+                    </div>
+
+                    <!-- Подтверждение нового PIN -->
+                    <div class="mb-4">
+                        <label for="id_confirm_pin" class="form-label fw-bold">
+                            Подтвердите новый PIN-код
+                        </label>
+                        {{ form.confirm_pin }}
+                        {% if form.confirm_pin.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.confirm_pin.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Ошибки формы -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Кнопки -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-touch">
+                            <i class="bi bi-check-lg me-2"></i>
+                            Сохранить
+                        </button>
+                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary btn-touch">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

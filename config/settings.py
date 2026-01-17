@@ -126,3 +126,26 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Модель пользователя
+AUTH_USER_MODEL = 'shift_report.Employee'
+
+# Бэкенд аутентификации
+AUTHENTICATION_BACKENDS = [
+    'shift_report.backends.PINAuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Для админки
+]
+
+# URL для входа/выхода
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'
+
+# Время жизни сессии (12 часов = конец смены)
+SESSION_COOKIE_AGE = 43200  # секунд
+
+# Сессия не сбрасывается при закрытии браузера (FR-014)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Обновление сессии при каждом запросе
+SESSION_SAVE_EVERY_REQUEST = True

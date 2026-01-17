@@ -1,0 +1,152 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Главная — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <h1 class="mb-4">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Добро пожаловать, {{ user.get_short_name }}!
+        </h1>
+
+        <div class="row g-4">
+            {% if user.is_operator or user.is_master or user.is_chief or user.is_admin %}
+            <!-- Карточка оператора -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm card-workplace">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-clipboard-data"></i>
+                        </div>
+                        <h2 class="h4">Ввод данных</h2>
+                        <p class="text-muted">
+                            Внесение фактических данных производства
+                        </p>
+                        <a href="#" class="btn btn-primary btn-touch stretched-link">
+                            Перейти
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.is_master or user.is_chief or user.is_admin %}
+            <!-- Карточка мастера -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm card-workplace">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 text-success mb-3">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </div>
+                        <h2 class="h4">Мониторинг</h2>
+                        <p class="text-muted">
+                            Контроль выполнения плана в реальном времени
+                        </p>
+                        <a href="#" class="btn btn-success btn-touch stretched-link">
+                            Перейти
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Карточка создания бланков -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm card-workplace">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 text-info mb-3">
+                            <i class="bi bi-file-earmark-plus"></i>
+                        </div>
+                        <h2 class="h4">Бланки ПА</h2>
+                        <p class="text-muted">
+                            Создание и управление бланками
+                        </p>
+                        <a href="#" class="btn btn-info btn-touch stretched-link">
+                            Перейти
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.is_chief or user.is_admin %}
+            <!-- Карточка аналитики -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm card-workplace">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 text-warning mb-3">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h2 class="h4">Аналитика</h2>
+                        <p class="text-muted">
+                            Отчёты и анализ производительности
+                        </p>
+                        <a href="#" class="btn btn-warning btn-touch stretched-link">
+                            Перейти
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user.is_admin or user.is_superuser %}
+            <!-- Карточка администрирования -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm card-workplace">
+                    <div class="card-body text-center p-4">
+                        <div class="display-4 text-secondary mb-3">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <h2 class="h4">Администрирование</h2>
+                        <p class="text-muted">
+                            Настройка системы и справочников
+                        </p>
+                        <a href="{% url 'admin:index' %}" class="btn btn-secondary btn-touch stretched-link">
+                            Перейти
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Информация о текущей смене -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header">
+                <i class="bi bi-clock me-2"></i>
+                Текущая информация
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Дата:</strong>
+                        <span id="current-date">{{ "now"|date:"d.m.Y" }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Время:</strong>
+                        <span id="current-time">{{ "now"|time:"H:i" }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Роль:</strong>
+                        {{ user.get_role_display }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Обновление времени
+function updateTime() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('current-time').textContent = timeStr;
+}
+
+setInterval(updateTime, 1000);
+updateTime();
+</script>
+{% endblock %}

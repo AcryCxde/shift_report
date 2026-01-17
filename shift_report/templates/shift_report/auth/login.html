@@ -1,0 +1,152 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Вход в систему — Производственный анализ{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+    <div class="card shadow-lg" style="max-width: 450px; width: 100%;">
+        <div class="card-header bg-dark text-white text-center py-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-bar-chart-fill me-2"></i>
+                Производственный анализ
+            </h1>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+            <h2 class="text-center mb-4 h4">Вход в систему</h2>
+
+            <form method="post" id="loginForm">
+                {% csrf_token %}
+
+                <!-- Табельный номер -->
+                <div class="mb-4">
+                    <label for="id_personnel_number" class="form-label fw-bold">
+                        <i class="bi bi-person-badge me-1"></i>
+                        Табельный номер
+                    </label>
+                    {{ form.personnel_number }}
+                    {% if form.personnel_number.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.personnel_number.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- PIN-код -->
+                <div class="mb-4">
+                    <label for="id_pin" class="form-label fw-bold">
+                        <i class="bi bi-key me-1"></i>
+                        PIN-код
+                    </label>
+                    {{ form.pin }}
+                    {% if form.pin.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.pin.errors.0 }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Запомнить меня -->
+                <div class="mb-4 form-check">
+                    {{ form.remember_me }}
+                    <label class="form-check-label" for="id_remember_me">
+                        Запомнить меня на этом устройстве
+                    </label>
+                </div>
+
+                <!-- Ошибки формы -->
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Кнопка входа -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-touch">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Войти
+                    </button>
+                </div>
+            </form>
+
+            <!-- Цифровая клавиатура для планшетов -->
+            <div class="mt-4 d-md-none">
+                <hr>
+                <p class="text-center text-muted mb-3">Цифровая клавиатура</p>
+                <div class="d-flex flex-wrap justify-content-center" id="numpad">
+                    {% for num in "123456789" %}
+                    <button type="button" class="btn btn-outline-secondary numpad-btn" data-num="{{ num }}">
+                        {{ num }}
+                    </button>
+                    {% endfor %}
+                    <button type="button" class="btn btn-outline-danger numpad-btn" data-action="clear">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary numpad-btn" data-num="0">
+                        0
+                    </button>
+                    <button type="button" class="btn btn-outline-warning numpad-btn" data-action="backspace">
+                        <i class="bi bi-backspace"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer text-center text-muted py-3">
+            <small>Система производственного анализа</small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const personnelInput = document.getElementById('id_personnel_number');
+    const pinInput = document.getElementById('id_pin');
+    let activeInput = personnelInput;
+
+    // Отслеживание активного поля
+    personnelInput.addEventListener('focus', () => activeInput = personnelInput);
+    pinInput.addEventListener('focus', () => activeInput = pinInput);
+
+    // Обработка цифровой клавиатуры
+    document.querySelectorAll('#numpad button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const num = this.dataset.num;
+            const action = this.dataset.action;
+
+            if (num !== undefined) {
+                // Добавляем цифру
+                const maxLength = activeInput.maxLength || 20;
+                if (activeInput.value.length < maxLength) {
+                    activeInput.value += num;
+                    activeInput.dispatchEvent(new Event('input'));
+                }
+            } else if (action === 'clear') {
+                // Очищаем поле
+                activeInput.value = '';
+            } else if (action === 'backspace') {
+                // Удаляем последний символ
+                activeInput.value = activeInput.value.slice(0, -1);
+            }
+
+            activeInput.focus();
+        });
+    });
+
+    // Автопереход на PIN после ввода табельного номера
+    personnelInput.addEventListener('input', function() {
+        if (this.value.length >= 6) {
+            pinInput.focus();
+            activeInput = pinInput;
+        }
+    });
+});
+</script>
+{% endblock %}
