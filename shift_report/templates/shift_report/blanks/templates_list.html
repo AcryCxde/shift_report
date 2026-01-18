@@ -1,0 +1,117 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Шаблоны бланков — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-file-earmark-ruled me-2"></i>
+                Шаблоны бланков
+            </h1>
+            <p class="text-muted mb-0">
+                Шаблоны используются для массового создания бланков
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'blanks:template_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                Создать шаблон
+            </a>
+            <a href="{% url 'blanks:list' %}" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-arrow-left me-1"></i>
+                К бланкам
+            </a>
+        </div>
+    </div>
+
+    <!-- Таблица шаблонов -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Рабочее место</th>
+                        <th>Продукция</th>
+                        <th>Смена</th>
+                        <th class="text-center">Тип</th>
+                        <th class="text-center">План</th>
+                        <th>Дни недели</th>
+                        <th class="text-center">Статус</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for template in templates %}
+                    <tr>
+                        <td>
+                            <strong>{{ template.name }}</strong>
+                        </td>
+                        <td>
+                            {{ template.workplace.name }}
+                            <br>
+                            <small class="text-muted">{{ template.workplace.sector.name }}</small>
+                        </td>
+                        <td>
+                            {{ template.product.name }}
+                            <br>
+                            <small class="text-muted">{{ template.product.article }}</small>
+                        </td>
+                        <td>{{ template.shift.name }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-info">Тип {{ template.blank_type }}</span>
+                        </td>
+                        <td class="text-center">{{ template.planned_quantity }}</td>
+                        <td>
+                            {% if template.monday %}<span class="badge bg-secondary me-1">Пн</span>{% endif %}
+                            {% if template.tuesday %}<span class="badge bg-secondary me-1">Вт</span>{% endif %}
+                            {% if template.wednesday %}<span class="badge bg-secondary me-1">Ср</span>{% endif %}
+                            {% if template.thursday %}<span class="badge bg-secondary me-1">Чт</span>{% endif %}
+                            {% if template.friday %}<span class="badge bg-secondary me-1">Пт</span>{% endif %}
+                            {% if template.saturday %}<span class="badge bg-warning text-dark me-1">Сб</span>{% endif %}
+                            {% if template.sunday %}<span class="badge bg-warning text-dark me-1">Вс</span>{% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if template.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'blanks:template_edit' template.pk %}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="post" action="{% url 'blanks:template_delete' template.pk %}"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Удалить шаблон?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                            Шаблоны не созданы
+                            <br>
+                            <a href="{% url 'blanks:template_create' %}" class="btn btn-primary mt-3">
+                                <i class="bi bi-plus-lg me-1"></i>
+                                Создать первый шаблон
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

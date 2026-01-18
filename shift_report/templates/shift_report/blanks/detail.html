@@ -1,0 +1,258 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}{{ blank.workplace.name }} — Бланк ПА{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'blanks:list' %}">Бланки ПА</a>
+                </li>
+                <li class="breadcrumb-item active">{{ blank.workplace.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h3 mb-1">{{ blank.workplace.name }}</h1>
+                <p class="text-muted mb-0">
+                    {{ blank.product.name }} ({{ blank.product.article }})
+                    <span class="mx-2">•</span>
+                    {{ blank.shift.name }}
+                    <span class="mx-2">•</span>
+                    {{ blank.date|date:"d.m.Y" }}
+                </p>
+            </div>
+            <div>
+                {% if blank.status == 'draft' %}
+                <span class="badge bg-secondary fs-6">Черновик</span>
+                {% elif blank.status == 'active' %}
+                <span class="badge bg-primary fs-6">Активный</span>
+                {% elif blank.status == 'completed' %}
+                <span class="badge bg-success fs-6">Завершён</span>
+                {% else %}
+                <span class="badge bg-dark fs-6">Отменён</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Левая колонка: информация и редактирование -->
+        <div class="col-lg-4 mb-4">
+            <!-- Сводка -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    Сводка
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col-6">
+                            <div class="text-muted small">План</div>
+                            <div class="h3 mb-0">{{ blank.total_plan }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small">Факт</div>
+                            <div class="h3 mb-0">{{ blank.total_fact }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small">Отклонение</div>
+                            <div class="h3 mb-0 {% if blank.total_deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if blank.total_deviation >= 0 %}+{% endif %}{{ blank.total_deviation }}
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small">Выполнение</div>
+                            <div class="h3 mb-0 
+                                {% if blank.completion_percentage >= 100 %}text-success
+                                {% elif blank.completion_percentage >= 90 %}text-warning
+                                {% else %}text-danger{% endif %}">
+                                {{ blank.completion_percentage|floatformat:0 }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <dl class="mb-0 small">
+                        <dt>Тип бланка</dt>
+                        <dd>{{ blank.get_blank_type_display }}</dd>
+
+                        <dt>Время такта</dt>
+                        <dd>{{ blank.takt_time|default:"—" }} сек</dd>
+
+                        <dt>Темп производства</dt>
+                        <dd>{{ blank.production_rate|floatformat:1 }} шт/час</dd>
+
+                        <dt>Часовой план</dt>
+                        <dd>{{ blank.hourly_plan }} шт</dd>
+
+                        <dt>Создан</dt>
+                        <dd>
+                            {{ blank.created_at|date:"d.m.Y H:i" }}
+                            {% if blank.created_by %}
+                            ({{ blank.created_by.get_short_name }})
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Редактирование -->
+            {% if blank.is_editable %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-pencil me-2"></i>
+                    Редактирование
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Плановое количество</label>
+                            {{ form.planned_quantity }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            {{ form.status }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Примечания</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-lg me-1"></i>
+                            Сохранить изменения
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Действия -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-gear me-2"></i>
+                    Действия
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'master:blank_monitor' blank.pk %}" class="btn btn-outline-success">
+                            <i class="bi bi-graph-up me-1"></i>
+                            Мониторинг
+                        </a>
+                        <a href="{% url 'operator:blank_detail' blank.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil-square me-1"></i>
+                            Ввод данных
+                        </a>
+
+                        {% if blank.status == 'draft' and not blank.records.filter.is_filled %}
+                        <form method="post" action="{% url 'blanks:delete' blank.pk %}"
+                              onsubmit="return confirm('Удалить бланк?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-trash me-1"></i>
+                                Удалить бланк
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка: записи -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Почасовые записи
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 50px;">Час</th>
+                                <th style="width: 100px;">Время</th>
+                                <th class="text-center">План</th>
+                                <th class="text-center">Факт</th>
+                                <th class="text-center">Откл.</th>
+                                <th class="text-center">Σ План</th>
+                                <th class="text-center">Σ Факт</th>
+                                <th class="text-center">Σ Откл.</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                            <tr>
+                                <td class="text-center fw-bold">{{ record.hour_number }}</td>
+                                <td>
+                                    <small>{{ record.start_time|time:"H:i" }}-{{ record.end_time|time:"H:i" }}</small>
+                                </td>
+                                <td class="text-center">{{ record.planned_quantity }}</td>
+                                <td class="text-center">
+                                    {% if record.is_filled %}
+                                    <strong>{{ record.actual_quantity }}</strong>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if record.is_filled %}
+                                    <span class="{% if record.deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if record.deviation >= 0 %}+{% endif %}{{ record.deviation }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center text-muted">{{ record.cumulative_plan }}</td>
+                                <td class="text-center">
+                                    {% if record.is_filled %}{{ record.cumulative_fact }}{% else %}—{% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if record.is_filled %}
+                                    <span class="{% if record.cumulative_deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if record.cumulative_deviation >= 0 %}+{% endif %}{{ record.cumulative_deviation }}
+                                    </span>
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    {% if record.is_filled %}
+                                    <span class="badge bg-success">Заполнено</span>
+                                    {% if record.deviations.exists %}
+                                    <span class="badge bg-warning text-dark">
+                                        {{ record.deviations.count }} причин
+                                    </span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="badge bg-secondary">Ожидает</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка назад -->
+    <div class="mt-4">
+        <a href="{% url 'blanks:list' %}" class="btn btn-outline-secondary btn-touch">
+            <i class="bi bi-arrow-left me-2"></i>
+            Назад к списку
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Бланки ПА — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Бланки ПА
+            </h1>
+        </div>
+        <div>
+            <a href="{% url 'blanks:create' %}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-lg me-1"></i>
+                Создать бланк
+            </a>
+            <a href="{% url 'blanks:bulk_create' %}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-layers me-1"></i>
+                Массовое создание
+            </a>
+            <a href="{% url 'blanks:templates' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-ruled me-1"></i>
+                Шаблоны
+            </a>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label class="form-label">Дата</label>
+                    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}"
+                           class="form-control">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Статус</label>
+                    <select name="status" class="form-select">
+                        <option value="">Все</option>
+                        <option value="draft" {% if selected_status == 'draft' %}selected{% endif %}>Черновик</option>
+                        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Активный</option>
+                        <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Завершён</option>
+                        <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Отменён</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Рабочее место</label>
+                    <select name="workplace" class="form-select">
+                        <option value="">Все</option>
+                        {% for wp in workplaces %}
+                        <option value="{{ wp.pk }}" {% if selected_workplace == wp.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ wp.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>
+                        Применить
+                    </button>
+                    <a href="{% url 'blanks:list' %}" class="btn btn-outline-secondary">
+                        Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center py-2">
+                    <div class="h4 mb-0">{{ stats.total }}</div>
+                    <small class="text-muted">Всего</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center py-2">
+                    <div class="h4 mb-0">{{ stats.draft }}</div>
+                    <small>Черновики</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <div class="h4 mb-0">{{ stats.active }}</div>
+                    <small>Активные</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <div class="h4 mb-0">{{ stats.completed }}</div>
+                    <small>Завершённые</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица бланков -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Рабочее место</th>
+                        <th>Продукция</th>
+                        <th>Смена</th>
+                        <th class="text-center">Тип</th>
+                        <th class="text-center">План</th>
+                        <th class="text-center">Факт</th>
+                        <th class="text-center">%</th>
+                        <th class="text-center">Статус</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for blank in blanks %}
+                    <tr>
+                        <td>
+                            <strong>{{ blank.workplace.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ blank.workplace.sector.name }}</small>
+                        </td>
+                        <td>
+                            {{ blank.product.name }}
+                            <br>
+                            <small class="text-muted">{{ blank.product.article }}</small>
+                        </td>
+                        <td>{{ blank.shift.name }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-info">Тип {{ blank.blank_type }}</span>
+                        </td>
+                        <td class="text-center">{{ blank.total_plan }}</td>
+                        <td class="text-center">{{ blank.total_fact }}</td>
+                        <td class="text-center">
+                            <span class="badge 
+                                {% if blank.completion_percentage >= 100 %}bg-success
+                                {% elif blank.completion_percentage >= 90 %}bg-warning text-dark
+                                {% elif blank.completion_percentage > 0 %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ blank.completion_percentage|floatformat:0 }}%
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if blank.status == 'draft' %}
+                            <span class="badge bg-secondary">Черновик</span>
+                            {% elif blank.status == 'active' %}
+                            <span class="badge bg-primary">Активный</span>
+                            {% elif blank.status == 'completed' %}
+                            <span class="badge bg-success">Завершён</span>
+                            {% else %}
+                            <span class="badge bg-dark">Отменён</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'blanks:detail' blank.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'master:blank_monitor' blank.pk %}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-graph-up"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                            Бланки не найдены
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

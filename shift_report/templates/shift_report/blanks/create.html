@@ -1,0 +1,199 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Создать бланк — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Заголовок -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'blanks:list' %}">Бланки ПА</a>
+                        </li>
+                        <li class="breadcrumb-item active">Создание</li>
+                    </ol>
+                </nav>
+                <h1 class="h3">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Создать бланк ПА
+                </h1>
+            </div>
+
+            <form method="post" id="create-form">
+                {% csrf_token %}
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Основные параметры
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Рабочее место *</label>
+                                {{ form.workplace }}
+                                {% if form.workplace.errors %}
+                                <div class="text-danger small">{{ form.workplace.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Дата *</label>
+                                {{ form.date }}
+                                {% if form.date.errors %}
+                                <div class="text-danger small">{{ form.date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Смена *</label>
+                                {{ form.shift }}
+                                {% if form.shift.errors %}
+                                <div class="text-danger small">{{ form.shift.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Продукция *</label>
+                                {{ form.product }}
+                                {% if form.product.errors %}
+                                <div class="text-danger small">{{ form.product.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-calculator me-2"></i>
+                        Плановые показатели
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Плановое количество *</label>
+                                {{ form.planned_quantity }}
+                                {% if form.planned_quantity.errors %}
+                                <div class="text-danger small">{{ form.planned_quantity.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text" id="plan-hint"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Тип бланка</label>
+                                {{ form.blank_type }}
+                                <div class="form-text">
+                                    Автоматически определяется по времени такта и мощности РМ
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Подсказка по расчёту -->
+                        <div class="alert alert-info mt-3" id="calculation-info" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>По времени такта:</strong>
+                                    <span id="calc-by-takt">—</span> шт.
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>По мощности РМ:</strong>
+                                    <span id="calc-by-capacity">—</span> шт.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-chat-text me-2"></i>
+                        Дополнительно
+                    </div>
+                    <div class="card-body">
+                        {{ form.notes }}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'blanks:list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-touch">
+                        <i class="bi bi-check-lg me-2"></i>
+                        Создать бланк
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const workplaceSelect = document.getElementById('id_workplace');
+    const shiftSelect = document.getElementById('id_shift');
+    const productSelect = document.getElementById('id_product');
+    const plannedInput = document.getElementById('id_planned_quantity');
+    const planHint = document.getElementById('plan-hint');
+    const calcInfo = document.getElementById('calculation-info');
+    const calcByTakt = document.getElementById('calc-by-takt');
+    const calcByCapacity = document.getElementById('calc-by-capacity');
+
+    function updateCalculation() {
+        const productId = productSelect.value;
+        const shiftId = shiftSelect.value;
+        const workplaceId = workplaceSelect.value;
+
+        if (!productId || !shiftId) {
+            calcInfo.style.display = 'none';
+            return;
+        }
+
+        let url = `{% url 'blanks:api_calculate_plan' %}?product_id=${productId}&shift_id=${shiftId}`;
+        if (workplaceId) {
+            url += `&workplace_id=${workplaceId}`;
+        }
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    calcInfo.style.display = 'none';
+                    return;
+                }
+
+                calcByTakt.textContent = data.calculated_by_takt || '—';
+                calcByCapacity.textContent = data.calculated_by_capacity || '—';
+                calcInfo.style.display = 'block';
+
+                // Подсказка
+                if (data.calculated_by_takt) {
+                    planHint.textContent = `Рекомендуемый план: ${data.calculated_by_takt} шт.`;
+                }
+            })
+            .catch(err => {
+                console.error('Ошибка расчёта:', err);
+                calcInfo.style.display = 'none';
+            });
+    }
+
+    workplaceSelect.addEventListener('change', updateCalculation);
+    shiftSelect.addEventListener('change', updateCalculation);
+    productSelect.addEventListener('change', updateCalculation);
+
+    // Начальный расчёт
+    updateCalculation();
+});
+</script>
+{% endblock %}

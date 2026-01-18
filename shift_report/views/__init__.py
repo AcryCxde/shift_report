@@ -1,9 +1,14 @@
 from .auth import ChangePINView, HomeView, LoginView, LogoutView, ProfileView
+from .blanks import (BlankBulkCreateView, BlankCreateView, BlankDeleteView,
+                     BlankDetailView, BlankListView, CalculatePlanAPIView,
+                     TemplateCreateView, TemplateDeleteView, TemplateEditView,
+                     TemplateListView, WorkplaceAPIView)
 from .master import (AddMeasureView, BlankMonitorView, BlankStatusAPIView,
                      MasterMonitoringView, MonitoringAPIView,
                      WorkplaceDetailView)
-from .operator import (BlankDetailView, OperatorDashboardView, QuickInputView,
-                       ReasonSearchView, RecordInputView)
+from .operator import BlankDetailView as OperatorBlankDetailView
+from .operator import (OperatorDashboardView, QuickInputView, ReasonSearchView,
+                       RecordInputView)
 
 __all__ = [
     # Auth
@@ -14,7 +19,7 @@ __all__ = [
     'ProfileView',
     # Operator
     'OperatorDashboardView',
-    'BlankDetailView',
+    'OperatorBlankDetailView',
     'RecordInputView',
     'QuickInputView',
     'ReasonSearchView',
@@ -25,4 +30,16 @@ __all__ = [
     'AddMeasureView',
     'MonitoringAPIView',
     'BlankStatusAPIView',
+    # Blanks
+    'BlankListView',
+    'BlankCreateView',
+    'BlankBulkCreateView',
+    'BlankDetailView',
+    'BlankDeleteView',
+    'TemplateListView',
+    'TemplateCreateView',
+    'TemplateEditView',
+    'TemplateDeleteView',
+    'WorkplaceAPIView',
+    'CalculatePlanAPIView',
 ]

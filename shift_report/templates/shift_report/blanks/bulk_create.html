@@ -1,0 +1,136 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Массовое создание бланков — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Заголовок -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'blanks:list' %}">Бланки ПА</a>
+                        </li>
+                        <li class="breadcrumb-item active">Массовое создание</li>
+                    </ol>
+                </nav>
+                <h1 class="h3">
+                    <i class="bi bi-layers me-2"></i>
+                    Массовое создание бланков
+                </h1>
+                <p class="text-muted">
+                    Создание бланков для всех рабочих мест участка на выбранный период
+                </p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-building me-2"></i>
+                        Участок и период
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Участок *</label>
+                                {{ form.sector }}
+                                {% if form.sector.errors %}
+                                <div class="text-danger small">{{ form.sector.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Дата с *</label>
+                                {{ form.date_from }}
+                                {% if form.date_from.errors %}
+                                <div class="text-danger small">{{ form.date_from.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Дата по *</label>
+                                {{ form.date_to }}
+                                {% if form.date_to.errors %}
+                                <div class="text-danger small">{{ form.date_to.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-clock me-2"></i>
+                        Смены
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for shift in form.shifts %}
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ shift.tag }}
+                                    <label class="form-check-label" for="{{ shift.id_for_label }}">
+                                        {{ shift.choice_label }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.shifts.errors %}
+                        <div class="text-danger small mt-2">{{ form.shifts.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-gear me-2"></i>
+                        Настройки
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            {{ form.use_templates }}
+                            <label class="form-check-label" for="id_use_templates">
+                                Использовать шаблоны
+                            </label>
+                            <div class="form-text">
+                                Бланки будут созданы на основе активных шаблонов для рабочих мест.
+                                Если шаблон не найден, бланк не будет создан.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Внимание!</strong>
+                    Бланки будут созданы только для рабочих мест, у которых настроены шаблоны.
+                    Убедитесь, что шаблоны созданы и активны.
+                    <a href="{% url 'blanks:templates' %}">Управление шаблонами</a>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'blanks:list' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-touch">
+                        <i class="bi bi-layers me-2"></i>
+                        Создать бланки
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

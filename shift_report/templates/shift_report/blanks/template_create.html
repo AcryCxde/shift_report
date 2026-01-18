@@ -1,0 +1,182 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}{% if template %}Редактировать{% else %}Создать{% endif %} шаблон — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Заголовок -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'blanks:list' %}">Бланки ПА</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'blanks:templates' %}">Шаблоны</a>
+                        </li>
+                        <li class="breadcrumb-item active">
+                            {% if template %}Редактирование{% else %}Создание{% endif %}
+                        </li>
+                    </ol>
+                </nav>
+                <h1 class="h3">
+                    <i class="bi bi-file-earmark-ruled me-2"></i>
+                    {% if template %}Редактировать шаблон{% else %}Создать шаблон{% endif %}
+                </h1>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Основные параметры
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Название шаблона *</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Рабочее место *</label>
+                                {{ form.workplace }}
+                                {% if form.workplace.errors %}
+                                <div class="text-danger small">{{ form.workplace.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Смена *</label>
+                                {{ form.shift }}
+                                {% if form.shift.errors %}
+                                <div class="text-danger small">{{ form.shift.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Продукция *</label>
+                                {{ form.product }}
+                                {% if form.product.errors %}
+                                <div class="text-danger small">{{ form.product.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Тип бланка *</label>
+                                {{ form.blank_type }}
+                                {% if form.blank_type.errors %}
+                                <div class="text-danger small">{{ form.blank_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Плановое количество *</label>
+                                {{ form.planned_quantity }}
+                                {% if form.planned_quantity.errors %}
+                                <div class="text-danger small">{{ form.planned_quantity.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-calendar3 me-2"></i>
+                        Дни недели
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            Выберите дни, когда шаблон должен применяться
+                        </p>
+                        <div class="row">
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.monday }}
+                                    <label class="form-check-label" for="id_monday">Понедельник</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.tuesday }}
+                                    <label class="form-check-label" for="id_tuesday">Вторник</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.wednesday }}
+                                    <label class="form-check-label" for="id_wednesday">Среда</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.thursday }}
+                                    <label class="form-check-label" for="id_thursday">Четверг</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.friday }}
+                                    <label class="form-check-label" for="id_friday">Пятница</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.saturday }}
+                                    <label class="form-check-label" for="id_saturday">Суббота</label>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3 mb-2">
+                                <div class="form-check">
+                                    {{ form.sunday }}
+                                    <label class="form-check-label" for="id_sunday">Воскресенье</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-toggle-on me-2"></i>
+                        Статус
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="id_is_active">
+                                Шаблон активен
+                            </label>
+                            <div class="form-text">
+                                Неактивные шаблоны не используются при массовом создании бланков
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'blanks:templates' %}" class="btn btn-outline-secondary btn-touch">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Отмена
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-touch">
+                        <i class="bi bi-check-lg me-2"></i>
+                        {% if template %}Сохранить{% else %}Создать{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
