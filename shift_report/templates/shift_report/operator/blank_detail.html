@@ -188,7 +188,7 @@
         </a>
 
         {% if blank.is_editable and current_hour %}
-        <a href="{% url 'operator:record_input' records|first.pk %}"
+        <a href="{% url 'operator:record_input' records.0.pk %}"
            class="btn btn-success btn-touch">
             <i class="bi bi-plus-lg me-2"></i>
             Ввести текущий час

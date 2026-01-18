@@ -21,7 +21,9 @@ urlpatterns = [
     # Интерфейс оператора
     path('operator/', include('shift_report.urls.operator', namespace='operator')),
 
+    # Панель мониторинга мастера
+    path('master/', include('shift_report.urls.master', namespace='master')),
+
     # Модули будут добавлены в следующих этапах:
-    # path('master/', include('shift_report.urls.master', namespace='master')),
     # path('analytics/', include('shift_report.urls.analytics', namespace='analytics')),
 ]

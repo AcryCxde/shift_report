@@ -1,0 +1,324 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Мониторинг — Производственный анализ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workplace-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .workplace-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+        animation: pulse 2s infinite;
+    }
+    .status-indicator.success { background-color: var(--bs-success); }
+    .status-indicator.warning { background-color: var(--bs-warning); }
+    .status-indicator.danger { background-color: var(--bs-danger); }
+    .status-indicator.secondary { background-color: var(--bs-secondary); }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .progress-thick {
+        height: 24px;
+        border-radius: 12px;
+    }
+    .sector-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+    }
+    .deviation-badge {
+        font-size: 0.85rem;
+        padding: 4px 8px;
+    }
+    .stat-card {
+        border-radius: 12px;
+        border: none;
+    }
+    .refresh-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-grid-3x3-gap me-2"></i>
+                Мониторинг участка
+            </h1>
+            <p class="text-muted mb-0">
+                {% if current_sector %}
+                {{ current_sector.name }} ({{ current_sector.workshop.name }})
+                {% else %}
+                Все участки
+                {% endif %}
+                <span class="mx-2">•</span>
+                {{ today|date:"d.m.Y" }}
+            </p>
+        </div>
+        <div>
+            <span class="text-muted me-2">Обновлено:</span>
+            <span id="last-update">{% now "H:i:s" %}</span>
+            <button class="btn btn-outline-primary btn-sm ms-2" onclick="refreshData()">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Сводная статистика -->
+    <div class="row g-3 mb-4">
+        {% with total_plan=0 total_fact=0 total_deviation=0 %}
+        {% for sector_id, data in sectors_data.items %}
+            {% with total_plan=total_plan|add:data.total_plan total_fact=total_fact|add:data.total_fact total_deviation=total_deviation|add:data.total_deviation %}
+            {% endwith %}
+        {% endfor %}
+
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0" id="stat-plan">
+                        {% for sector_id, data in sectors_data.items %}{% with p=data.total_plan %}{{ p|add:0 }}{% endwith %}{% endfor %}
+                    </div>
+                    <small>План на смену</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0" id="stat-fact">
+                        {% for sector_id, data in sectors_data.items %}{% with f=data.total_fact %}{{ f|add:0 }}{% endwith %}{% endfor %}
+                    </div>
+                    <small>Факт</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-warning">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0" id="stat-deviation">
+                        {% for sector_id, data in sectors_data.items %}{% with d=data.total_deviation %}{{ d|add:0 }}{% endwith %}{% endfor %}
+                    </div>
+                    <small>Отклонение</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body text-center">
+                    <div class="h2 mb-0">{{ sectors_data.values|length }}</div>
+                    <small>Рабочих мест</small>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+
+    <!-- Топ причин отклонений -->
+    {% if deviations_stats %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Топ причин отклонений за сегодня
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for stat in deviations_stats %}
+                <div class="col-auto mb-2">
+                    <span class="badge deviation-badge" style="background-color: {{ stat.reason__group__color }}">
+                        {{ stat.reason__group__name }}: {{ stat.count }}
+                        {% if stat.total_duration %}({{ stat.total_duration }} мин){% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Карточки по участкам -->
+    {% for sector_id, data in sectors_data.items %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header sector-header py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-building me-2"></i>
+                    {{ data.sector.name }}
+                </h5>
+                <div>
+                    <span class="badge bg-light text-dark me-2">
+                        План: {{ data.total_plan }}
+                    </span>
+                    <span class="badge bg-light text-dark me-2">
+                        Факт: {{ data.total_fact }}
+                    </span>
+                    <span class="badge {% if data.completion >= 100 %}bg-success{% elif data.completion >= 90 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                        {{ data.completion }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for blank in data.blanks %}
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                    <div class="card workplace-card h-100"
+                         onclick="window.location='{% url 'master:blank_monitor' blank.pk %}'"
+                         data-blank-id="{{ blank.pk }}">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center
+                            {% if blank.completion_percentage >= 100 %}bg-success text-white
+                            {% elif blank.completion_percentage >= 90 %}bg-warning
+                            {% elif blank.completion_percentage > 0 %}bg-danger text-white
+                            {% else %}bg-secondary text-white{% endif %}">
+                            <span class="fw-bold">{{ blank.workplace.name }}</span>
+                            <span class="status-indicator
+                                {% if blank.completion_percentage >= 100 %}success
+                                {% elif blank.completion_percentage >= 90 %}warning
+                                {% elif blank.completion_percentage > 0 %}danger
+                                {% else %}secondary{% endif %}">
+                            </span>
+                        </div>
+                        <div class="card-body py-3">
+                            <div class="small text-muted mb-2">
+                                {{ blank.product.article }}
+                            </div>
+
+                            <!-- Прогресс -->
+                            <div class="progress progress-thick mb-2">
+                                <div class="progress-bar
+                                    {% if blank.completion_percentage >= 100 %}bg-success
+                                    {% elif blank.completion_percentage >= 90 %}bg-warning
+                                    {% else %}bg-danger{% endif %}"
+                                    style="width: {{ blank.completion_percentage|floatformat:0 }}%">
+                                    {{ blank.completion_percentage|floatformat:0 }}%
+                                </div>
+                            </div>
+
+                            <!-- Цифры -->
+                            <div class="row text-center small">
+                                <div class="col-4">
+                                    <div class="text-muted">План</div>
+                                    <div class="fw-bold">{{ blank.total_plan }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">Факт</div>
+                                    <div class="fw-bold">{{ blank.total_fact }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">Откл.</div>
+                                    <div class="fw-bold
+                                        {% if blank.total_deviation >= 0 %}text-success
+                                        {% else %}text-danger{% endif %}">
+                                        {% if blank.total_deviation >= 0 %}+{% endif %}{{ blank.total_deviation }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer py-2 small text-muted">
+                            <i class="bi bi-clock me-1"></i>
+                            {{ blank.shift.name }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        На сегодня нет активных бланков для вашего участка.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Кнопка обновления -->
+<button class="btn btn-primary refresh-btn" onclick="refreshData()" title="Обновить данные">
+    <i class="bi bi-arrow-clockwise"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let refreshInterval;
+
+function refreshData() {
+    fetch('{% url "master:api_status" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Обновляем карточки
+            data.blanks.forEach(blank => {
+                const card = document.querySelector(`[data-blank-id="${blank.id}"]`);
+                if (card) {
+                    // Обновляем прогресс-бар
+                    const progressBar = card.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = blank.completion + '%';
+                        progressBar.textContent = Math.round(blank.completion) + '%';
+
+                        // Обновляем цвет
+                        progressBar.className = 'progress-bar';
+                        if (blank.completion >= 100) {
+                            progressBar.classList.add('bg-success');
+                        } else if (blank.completion >= 90) {
+                            progressBar.classList.add('bg-warning');
+                        } else {
+                            progressBar.classList.add('bg-danger');
+                        }
+                    }
+
+                    // Обновляем цифры
+                    const cols = card.querySelectorAll('.row.text-center .col-4');
+                    if (cols.length === 3) {
+                        cols[0].querySelector('.fw-bold').textContent = blank.total_plan;
+                        cols[1].querySelector('.fw-bold').textContent = blank.total_fact;
+
+                        const devEl = cols[2].querySelector('.fw-bold');
+                        devEl.textContent = (blank.total_deviation >= 0 ? '+' : '') + blank.total_deviation;
+                        devEl.className = 'fw-bold ' + (blank.total_deviation >= 0 ? 'text-success' : 'text-danger');
+                    }
+                }
+            });
+
+            // Обновляем время
+            document.getElementById('last-update').textContent =
+                new Date().toLocaleTimeString('ru-RU');
+        })
+        .catch(err => console.error('Ошибка обновления:', err));
+}
+
+// Автообновление каждые 30 секунд
+document.addEventListener('DOMContentLoaded', function() {
+    refreshInterval = setInterval(refreshData, 30000);
+});
+
+// Остановка при уходе со страницы
+window.addEventListener('beforeunload', function() {
+    clearInterval(refreshInterval);
+});
+</script>
+{% endblock %}

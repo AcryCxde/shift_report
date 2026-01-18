@@ -1,0 +1,248 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}{{ blank.workplace.name }} — Бланк ПА{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hour-card {
+        transition: all 0.2s ease;
+    }
+    .hour-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .hour-card.current {
+        border: 3px solid var(--bs-primary);
+    }
+    .deviation-item {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+    .measure-item {
+        border-left: 3px solid var(--bs-success);
+        padding-left: 12px;
+        margin-top: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Навигация -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'master:monitoring' %}">Мониторинг</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'master:workplace_detail' blank.workplace.pk %}">{{ blank.workplace.name }}</a>
+            </li>
+            <li class="breadcrumb-item active">Бланк {{ blank.date|date:"d.m.Y" }}</li>
+        </ol>
+    </nav>
+
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 mb-1">{{ blank.workplace.name }}</h1>
+            <p class="text-muted mb-0">
+                {{ blank.product.name }} ({{ blank.product.article }})
+                <span class="mx-2">•</span>
+                {{ blank.shift.name }}
+                <span class="mx-2">•</span>
+                {{ blank.date|date:"d.m.Y" }}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="display-5 fw-bold
+                {% if blank.completion_percentage >= 100 %}text-success
+                {% elif blank.completion_percentage >= 90 %}text-warning
+                {% else %}text-danger{% endif %}">
+                {{ blank.completion_percentage|floatformat:0 }}%
+            </div>
+            <small class="text-muted">выполнение плана</small>
+        </div>
+    </div>
+
+    <!-- Сводка и статистика отклонений -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="text-muted small">Часовой план</div>
+                            <div class="h3 mb-0">{{ blank.hourly_plan }}</div>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted small">План общий</div>
+                            <div class="h3 mb-0">{{ blank.total_plan }}</div>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted small">Факт</div>
+                            <div class="h3 mb-0">{{ blank.total_fact }}</div>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted small">Отклонение</div>
+                            <div class="h3 mb-0
+                                {% if blank.total_deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if blank.total_deviation >= 0 %}+{% endif %}{{ blank.total_deviation }}
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted small">Простои</div>
+                            <div class="h3 mb-0">{{ blank.total_downtime }} мин</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <small class="fw-bold">Причины отклонений</small>
+                </div>
+                <div class="card-body py-2">
+                    {% for group, stats in deviations_by_group.items %}
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge" style="background-color: {{ stats.color }}">
+                            {{ group }}
+                        </span>
+                        <small>{{ stats.count }} ({{ stats.duration }} мин)</small>
+                    </div>
+                    {% empty %}
+                    <small class="text-muted">Отклонений нет</small>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Почасовые записи -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <i class="bi bi-clock-history me-2"></i>
+            Почасовые записи
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for record in records %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card hour-card h-100 {% if record.hour_number == current_hour %}current{% endif %}">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center
+                            {% if not record.is_filled %}bg-light
+                            {% elif record.deviation >= 0 %}bg-success text-white
+                            {% elif record.deviation >= -2 %}bg-warning
+                            {% else %}bg-danger text-white{% endif %}">
+                            <div>
+                                <strong>{{ record.hour_number }}-й час</strong>
+                                <small class="ms-2">{{ record.start_time|time:"H:i" }}-{{ record.end_time|time:"H:i" }}</small>
+                            </div>
+                            {% if record.hour_number == current_hour %}
+                            <span class="badge bg-primary">Текущий</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body py-3">
+                            <!-- Показатели -->
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <div class="text-muted small">План</div>
+                                    <div class="fw-bold">{{ record.planned_quantity }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted small">Факт</div>
+                                    <div class="fw-bold">
+                                        {% if record.is_filled %}{{ record.actual_quantity }}{% else %}—{% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted small">Откл.</div>
+                                    <div class="fw-bold
+                                        {% if record.deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if record.is_filled %}
+                                        {% if record.deviation >= 0 %}+{% endif %}{{ record.deviation }}
+                                        {% else %}—{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Отклонения и меры -->
+                            {% for deviation in record.deviations.all %}
+                            <div class="deviation-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="badge" style="background-color: {{ deviation.reason.group.color }}">
+                                            {{ deviation.reason.group.name }}
+                                        </span>
+                                        <div class="small mt-1">{{ deviation.reason.name }}</div>
+                                        {% if deviation.duration_minutes %}
+                                        <small class="text-muted">{{ deviation.duration_minutes }} мин</small>
+                                        {% endif %}
+                                        {% if deviation.comment %}
+                                        <div class="small text-muted fst-italic">{{ deviation.comment }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{% url 'master:add_measure' deviation.pk %}"
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Добавить меру">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </a>
+                                </div>
+
+                                <!-- Принятые меры -->
+                                {% for measure in deviation.measures.all %}
+                                <div class="measure-item">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-success fw-bold">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            {{ measure.get_measure_type_display }}
+                                        </small>
+                                        {% if measure.resolved_at %}
+                                        <span class="badge bg-success">Решено</span>
+                                        {% endif %}
+                                    </div>
+                                    <small>{{ measure.description }}</small>
+                                    <div class="small text-muted">
+                                        {{ measure.created_by.get_short_name }} •
+                                        {{ measure.created_at|date:"H:i" }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% empty %}
+                            {% if record.is_filled and record.deviation < 0 %}
+                            <div class="text-warning small">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Причина отклонения не указана
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if not record.is_filled %}
+                            <div class="text-center text-muted small">
+                                <i class="bi bi-hourglass-split me-1"></i>
+                                Ожидает ввода данных
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопки -->
+    <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'master:monitoring' %}" class="btn btn-outline-secondary btn-touch">
+            <i class="bi bi-arrow-left me-2"></i>
+            Назад к мониторингу
+        </a>
+        <a href="{% url 'master:workplace_detail' blank.workplace.pk %}" class="btn btn-outline-primary btn-touch">
+            <i class="bi bi-calendar3 me-2"></i>
+            История РМ
+        </a>
+    </div>
+</div>
+{% endblock %}

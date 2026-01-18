@@ -1,0 +1,155 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Добавить меру — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Навигация -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'master:monitoring' %}">Мониторинг</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'master:blank_monitor' deviation.record.blank.pk %}">
+                            {{ deviation.record.blank.workplace.name }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Добавить меру</li>
+                </ol>
+            </nav>
+
+            <!-- Информация об отклонении -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Отклонение
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="mb-0">
+                                <dt>Рабочее место</dt>
+                                <dd>{{ deviation.record.blank.workplace.name }}</dd>
+
+                                <dt>Час</dt>
+                                <dd>
+                                    {{ deviation.record.hour_number }}-й
+                                    ({{ deviation.record.start_time|time:"H:i" }} - {{ deviation.record.end_time|time:"H:i" }})
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="mb-0">
+                                <dt>Причина</dt>
+                                <dd>
+                                    <span class="badge" style="background-color: {{ deviation.reason.group.color }}">
+                                        {{ deviation.reason.group.name }}
+                                    </span>
+                                    {{ deviation.reason.name }}
+                                </dd>
+
+                                <dt>Длительность</dt>
+                                <dd>{{ deviation.duration_minutes|default:"—" }} мин</dd>
+
+                                {% if deviation.comment %}
+                                <dt>Комментарий</dt>
+                                <dd>{{ deviation.comment }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Существующие меры -->
+            {% if existing_measures %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Уже принятые меры
+                </div>
+                <div class="card-body">
+                    {% for measure in existing_measures %}
+                    <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
+                        <div>
+                            <span class="badge bg-success me-2">{{ measure.get_measure_type_display }}</span>
+                            {% if measure.resolved_at %}
+                            <span class="badge bg-primary">Решено</span>
+                            {% endif %}
+                            <div class="mt-1">{{ measure.description }}</div>
+                            <small class="text-muted">
+                                {{ measure.created_by.get_short_name }} •
+                                {{ measure.created_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Форма добавления меры -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Добавить меру
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="measure_type" class="form-label fw-bold">
+                                Тип меры <span class="text-danger">*</span>
+                            </label>
+                            <select name="measure_type" id="measure_type"
+                                    class="form-select form-select-lg" required>
+                                <option value="">Выберите тип меры...</option>
+                                {% for value, label in measure_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">
+                                Описание меры <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="description" id="description"
+                                      class="form-control form-control-lg"
+                                      rows="4"
+                                      placeholder="Опишите принятые действия..."
+                                      required></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_resolved" id="is_resolved"
+                                       class="form-check-input">
+                                <label for="is_resolved" class="form-check-label">
+                                    Проблема решена
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'master:blank_monitor' deviation.record.blank.pk %}"
+                               class="btn btn-outline-secondary btn-touch">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Отмена
+                            </a>
+                            <button type="submit" class="btn btn-success btn-touch">
+                                <i class="bi bi-check-lg me-2"></i>
+                                Сохранить меру
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
