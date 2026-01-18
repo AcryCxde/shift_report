@@ -13,6 +13,22 @@ from django.views import View
 from shift_report.forms import PINChangeForm, PINLoginForm
 
 
+class HomeView(View):
+    """
+    Главная страница с перенаправлением по ролям.
+    """
+
+    template_name = 'shift_report/home.html'
+
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return redirect('login')
+
+        return render(request, self.template_name, {
+            'user': request.user
+        })
+
+
 class LoginView(View):
     """
     Страница входа по табельному номеру и PIN-коду.
@@ -26,7 +42,7 @@ class LoginView(View):
     def get(self, request):
         # Если пользователь уже авторизован, перенаправляем
         if request.user.is_authenticated:
-            return redirect(self.get_redirect_url(request.user))
+            return redirect('home')
 
         form = PINLoginForm()
         return render(request, self.template_name, {'form': form})
@@ -63,12 +79,12 @@ class LoginView(View):
                     f'Добро пожаловать, {user.get_short_name()}!'
                 )
 
-                # Перенаправление в зависимости от роли
+                # Перенаправление
                 next_url = request.GET.get('next')
                 if next_url:
                     return redirect(next_url)
 
-                return redirect(self.get_redirect_url(user))
+                return redirect('home')
             else:
                 messages.error(
                     request,
@@ -76,18 +92,6 @@ class LoginView(View):
                 )
 
         return render(request, self.template_name, {'form': form})
-
-    def get_redirect_url(self, user):
-        """Определение URL для перенаправления в зависимости от роли"""
-        if user.is_operator:
-            return 'operator:dashboard'
-        elif user.is_master:
-            return 'master:monitoring'
-        elif user.is_chief:
-            return 'analytics:dashboard'
-        elif user.is_admin:
-            return 'admin:index'
-        return 'home'
 
 
 class LogoutView(View):

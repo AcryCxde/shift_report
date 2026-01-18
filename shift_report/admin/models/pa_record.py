@@ -100,17 +100,21 @@ class PARecordAdmin(admin.ModelAdmin):
     def status_indicator(self, obj):
         if not obj.is_filled:
             return format_html(
-                '<span style="color: #6c757d;">⬤ Не заполнено</span>'
+                '<span style="color: {};">⬤ Не заполнено</span>',
+                '#6c757d',
             )
         elif obj.actual_quantity >= obj.planned_quantity:
             return format_html(
-                '<span style="color: #198754;">⬤ В норме</span>'
+                '<span style="color: {};">⬤ В норме</span>',
+                '#198754'
             )
         elif obj.actual_quantity >= obj.planned_quantity * 0.9:
             return format_html(
-                '<span style="color: #ffc107;">⬤ Небольшое отставание</span>'
+                '<span style="color: {};">⬤ Небольшое отставание</span>',
+                '#ffc107'
             )
         else:
             return format_html(
-                '<span style="color: #dc3545;">⬤ Критическое отставание</span>'
+                '<span style="color: {};">⬤ Критическое отставание</span>',
+                '#dc3545'
             )

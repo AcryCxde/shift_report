@@ -1,0 +1,211 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}{{ blank.workplace.name }} — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'operator:dashboard' %}">Мои бланки</a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ blank.workplace.name }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-1">{{ blank.workplace.name }}</h1>
+            <p class="text-muted mb-0">
+                {{ blank.product.name }} ({{ blank.product.article }})
+                <span class="mx-2">•</span>
+                {{ blank.shift.name }}
+                <span class="mx-2">•</span>
+                {{ blank.date|date:"d.m.Y" }}
+            </p>
+        </div>
+
+        <!-- Общее выполнение -->
+        <div class="text-end">
+            <div class="display-6 fw-bold
+                {% if blank.completion_percentage >= 100 %}text-success
+                {% elif blank.completion_percentage >= 90 %}text-warning
+                {% else %}text-danger{% endif %}">
+                {{ blank.completion_percentage|floatformat:0 }}%
+            </div>
+            <small class="text-muted">выполнение плана</small>
+        </div>
+    </div>
+
+    <!-- Сводка -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center py-3">
+                    <div class="text-muted small">Часовой план</div>
+                    <div class="h4 mb-0">{{ blank.hourly_plan }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center py-3">
+                    <div class="text-muted small">План общий</div>
+                    <div class="h4 mb-0">{{ blank.total_plan }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center py-3">
+                    <div class="text-muted small">Факт</div>
+                    <div class="h4 mb-0">{{ blank.total_fact }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card
+                {% if blank.total_deviation >= 0 %}bg-success text-white
+                {% else %}bg-danger text-white{% endif %}">
+                <div class="card-body text-center py-3">
+                    <div class="small opacity-75">Отклонение</div>
+                    <div class="h4 mb-0">
+                        {% if blank.total_deviation >= 0 %}+{% endif %}{{ blank.total_deviation }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица записей -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <i class="bi bi-clock-history me-2"></i>
+            Почасовые записи
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="records-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 60px;" class="text-center">Час</th>
+                        <th style="width: 120px;">Время</th>
+                        <th style="width: 80px;" class="text-center">План</th>
+                        <th style="width: 80px;" class="text-center">Факт</th>
+                        <th style="width: 80px;" class="text-center">Откл.</th>
+                        <th style="width: 100px;" class="text-center">Σ План</th>
+                        <th style="width: 100px;" class="text-center">Σ Факт</th>
+                        <th style="width: 100px;" class="text-center">Σ Откл.</th>
+                        <th>Причины</th>
+                        <th style="width: 120px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr class="{% if record.hour_number == current_hour %}table-primary{% endif %}"
+                        data-record-id="{{ record.pk }}">
+                        <td class="text-center fw-bold">{{ record.hour_number }}</td>
+                        <td>
+                            <small>{{ record.start_time|time:"H:i" }} - {{ record.end_time|time:"H:i" }}</small>
+                        </td>
+                        <td class="text-center">{{ record.planned_quantity }}</td>
+                        <td class="text-center">
+                            {% if record.is_filled %}
+                            <span class="fw-bold">{{ record.actual_quantity }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if record.is_filled %}
+                            <span class="fw-bold
+                                {% if record.deviation >= 0 %}text-success
+                                {% else %}text-danger{% endif %}">
+                                {% if record.deviation >= 0 %}+{% endif %}{{ record.deviation }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center text-muted">{{ record.cumulative_plan }}</td>
+                        <td class="text-center">
+                            {% if record.is_filled %}
+                            {{ record.cumulative_fact }}
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if record.is_filled %}
+                            <span class="{% if record.cumulative_deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if record.cumulative_deviation >= 0 %}+{% endif %}{{ record.cumulative_deviation }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% for deviation in record.deviations.all %}
+                            <span class="badge" style="background-color: {{ deviation.reason.group.color }}">
+                                {{ deviation.reason.name }}
+                                {% if deviation.duration_minutes %}({{ deviation.duration_minutes }} мин){% endif %}
+                            </span>
+                            {% empty %}
+                            {% if record.is_filled and record.deviation < 0 %}
+                            <span class="text-danger small">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Не указана причина
+                            </span>
+                            {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="text-end">
+                            {% if blank.is_editable %}
+                            <a href="{% url 'operator:record_input' record.pk %}"
+                               class="btn btn-sm {% if record.is_filled %}btn-outline-primary{% else %}btn-primary{% endif %}">
+                                {% if record.is_filled %}
+                                <i class="bi bi-pencil"></i>
+                                {% else %}
+                                <i class="bi bi-plus-lg"></i>
+                                Ввести
+                                {% endif %}
+                            </a>
+                            {% else %}
+                            <span class="badge bg-secondary">Закрыт</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Кнопки внизу -->
+    <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'operator:dashboard' %}" class="btn btn-outline-secondary btn-touch">
+            <i class="bi bi-arrow-left me-2"></i>
+            Назад к бланкам
+        </a>
+
+        {% if blank.is_editable and current_hour %}
+        <a href="{% url 'operator:record_input' records|first.pk %}"
+           class="btn btn-success btn-touch">
+            <i class="bi bi-plus-lg me-2"></i>
+            Ввести текущий час
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Подсветка текущего часа
+document.addEventListener('DOMContentLoaded', function() {
+    const currentRow = document.querySelector('tr.table-primary');
+    if (currentRow) {
+        currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+</script>
+{% endblock %}

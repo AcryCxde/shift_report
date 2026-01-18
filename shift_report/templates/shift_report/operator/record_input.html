@@ -1,0 +1,472 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Ввод данных — {{ blank.workplace.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reason-card {
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+    .reason-card:hover {
+        border-color: var(--bs-primary);
+    }
+    .reason-card.selected {
+        border-color: var(--bs-primary);
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    .reason-badge {
+        font-size: 0.75rem;
+    }
+    .numpad-container {
+        max-width: 320px;
+        margin: 0 auto;
+    }
+    .quantity-display {
+        font-size: 3rem;
+        font-weight: bold;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .deviation-entry {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'operator:dashboard' %}">Мои бланки</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'operator:blank_detail' blank.pk %}">{{ blank.workplace.name }}</a>
+                </li>
+                <li class="breadcrumb-item active">Час {{ record.hour_number }}</li>
+            </ol>
+        </nav>
+        <h1 class="h3">
+            Ввод данных за {{ record.hour_number }}-й час
+        </h1>
+        <p class="text-muted">
+            {{ record.start_time|time:"H:i" }} — {{ record.end_time|time:"H:i" }}
+            <span class="mx-2">•</span>
+            План: <strong>{{ record.planned_quantity }}</strong> шт.
+        </p>
+    </div>
+
+    <form method="post" id="input-form">
+        {% csrf_token %}
+
+        <div class="row">
+            <!-- Левая колонка: ввод количества -->
+            <div class="col-12 col-lg-5 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-calculator me-2"></i>
+                        Фактическое количество
+                    </div>
+                    <div class="card-body">
+                        <!-- Отображение числа -->
+                        <div class="quantity-display border rounded mb-3" id="quantity-display">
+                            {{ record.actual_quantity|default:"0" }}
+                        </div>
+
+                        <!-- Скрытое поле -->
+                        <input type="hidden" name="actual_quantity" id="actual_quantity"
+                               value="{{ record.actual_quantity|default:0 }}">
+
+                        <!-- Цифровая клавиатура -->
+                        <div class="numpad-container">
+                            <div class="row g-2">
+                                {% for num in "123456789" %}
+                                <div class="col-4">
+                                    <button type="button"
+                                            class="btn btn-outline-secondary w-100 numpad-btn"
+                                            data-num="{{ num }}">
+                                        {{ num }}
+                                    </button>
+                                </div>
+                                {% endfor %}
+                                <div class="col-4">
+                                    <button type="button"
+                                            class="btn btn-outline-danger w-100 numpad-btn"
+                                            data-action="clear">
+                                        C
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button type="button"
+                                            class="btn btn-outline-secondary w-100 numpad-btn"
+                                            data-num="0">
+                                        0
+                                    </button>
+                                </div>
+                                <div class="col-4">
+                                    <button type="button"
+                                            class="btn btn-outline-warning w-100 numpad-btn"
+                                            data-action="backspace">
+                                        <i class="bi bi-backspace"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Быстрые кнопки -->
+                        <div class="mt-3">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button type="button" class="btn btn-outline-success quick-btn"
+                                        data-value="{{ record.planned_quantity }}">
+                                    = План ({{ record.planned_quantity }})
+                                </button>
+                                <button type="button" class="btn btn-outline-info quick-btn"
+                                        data-value="{{ record.planned_quantity|add:1 }}">
+                                    +1
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Предпросмотр отклонения -->
+                        <div class="mt-4 text-center">
+                            <div class="text-muted small">Отклонение от плана</div>
+                            <div class="h3 fw-bold" id="deviation-preview">
+                                {% if record.actual_quantity %}
+                                    {% with diff=record.actual_quantity|add:record.planned_quantity|stringformat:"d" %}
+                                    {{ record.deviation }}
+                                    {% endwith %}
+                                {% else %}
+                                —
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка: причины отклонения -->
+            <div class="col-12 col-lg-7 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Причины отклонения
+                        <span class="small text-muted">(если факт меньше плана)</span>
+                    </div>
+                    <div class="card-body" id="deviations-section">
+                        <!-- Топ-5 частых причин -->
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">Частые причины</h6>
+                            <div class="row g-2">
+                                {% for reason in top_reasons %}
+                                <div class="col-6 col-md-4">
+                                    <div class="card reason-card h-100"
+                                         data-reason-id="{{ reason.pk }}"
+                                         data-reason-name="{{ reason.name }}">
+                                        <div class="card-body py-2 px-3">
+                                            <span class="reason-badge badge"
+                                                  style="background-color: {{ reason.group.color }}">
+                                                {{ reason.group.name }}
+                                            </span>
+                                            <div class="small mt-1">{{ reason.name }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Выбранные причины -->
+                        <div id="selected-reasons" class="mb-4">
+                            <h6 class="text-muted mb-3">Выбранные причины</h6>
+                            <div id="reasons-list">
+                                {% for deviation in existing_deviations %}
+                                <div class="deviation-entry" data-reason-id="{{ deviation.reason.pk }}">
+                                    <input type="hidden" name="reason_ids" value="{{ deviation.reason.pk }}">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="badge"
+                                                  style="background-color: {{ deviation.reason.group.color }}">
+                                                {{ deviation.reason.group.name }}
+                                            </span>
+                                            <strong class="ms-2">{{ deviation.reason.name }}</strong>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-reason">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small">Длительность, мин</label>
+                                            <input type="number" class="form-control" name="durations"
+                                                   value="{{ deviation.duration_minutes }}" min="0" max="60">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Комментарий</label>
+                                            <input type="text" class="form-control" name="comments"
+                                                   value="{{ deviation.comment }}" maxlength="255">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div id="no-reasons-message" class="text-muted text-center py-3"
+                                 {% if existing_deviations %}style="display: none;"{% endif %}>
+                                Причины не выбраны
+                            </div>
+                        </div>
+
+                        <!-- Поиск причин -->
+                        <div>
+                            <h6 class="text-muted mb-3">Поиск причины</h6>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control form-control-lg"
+                                       id="reason-search"
+                                       placeholder="Начните вводить название...">
+                            </div>
+                            <div id="search-results" class="list-group" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'operator:blank_detail' blank.pk %}"
+               class="btn btn-outline-secondary btn-touch">
+                <i class="bi bi-arrow-left me-2"></i>
+                Отмена
+            </a>
+            <button type="submit" class="btn btn-success btn-touch btn-lg">
+                <i class="bi bi-check-lg me-2"></i>
+                Сохранить
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityDisplay = document.getElementById('quantity-display');
+    const quantityInput = document.getElementById('actual_quantity');
+    const deviationPreview = document.getElementById('deviation-preview');
+    const plannedQuantity = {{ record.planned_quantity }};
+    const deviationsSection = document.getElementById('deviations-section');
+    const reasonsList = document.getElementById('reasons-list');
+    const noReasonsMessage = document.getElementById('no-reasons-message');
+
+    let currentValue = quantityInput.value || '0';
+
+    // Обновление отображения
+    function updateDisplay() {
+        quantityDisplay.textContent = currentValue || '0';
+        quantityInput.value = currentValue || '0';
+
+        const deviation = parseInt(currentValue || 0) - plannedQuantity;
+        deviationPreview.textContent = (deviation >= 0 ? '+' : '') + deviation;
+        deviationPreview.className = 'h3 fw-bold ' +
+            (deviation >= 0 ? 'text-success' : 'text-danger');
+
+        // Показываем/скрываем секцию причин
+        if (deviation < 0) {
+            deviationsSection.style.opacity = '1';
+        } else {
+            deviationsSection.style.opacity = '0.5';
+        }
+    }
+
+    // Цифровая клавиатура
+    document.querySelectorAll('.numpad-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const num = this.dataset.num;
+            const action = this.dataset.action;
+
+            if (num !== undefined) {
+                if (currentValue === '0') {
+                    currentValue = num;
+                } else if (currentValue.length < 5) {
+                    currentValue += num;
+                }
+            } else if (action === 'clear') {
+                currentValue = '0';
+            } else if (action === 'backspace') {
+                currentValue = currentValue.slice(0, -1) || '0';
+            }
+
+            updateDisplay();
+        });
+    });
+
+    // Быстрые кнопки
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentValue = this.dataset.value;
+            updateDisplay();
+        });
+    });
+
+    // Выбор причины из топ-5
+    document.querySelectorAll('.reason-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const reasonId = this.dataset.reasonId;
+            const reasonName = this.dataset.reasonName;
+
+            // Проверяем, не добавлена ли уже
+            if (reasonsList.querySelector(`[data-reason-id="${reasonId}"]`)) {
+                return;
+            }
+
+            addReasonEntry(reasonId, reasonName, this);
+        });
+    });
+
+    // Добавление причины
+    function addReasonEntry(reasonId, reasonName, cardElement) {
+        const groupBadge = cardElement.querySelector('.reason-badge').outerHTML;
+
+        const entry = document.createElement('div');
+        entry.className = 'deviation-entry';
+        entry.dataset.reasonId = reasonId;
+        entry.innerHTML = `
+            <input type="hidden" name="reason_ids" value="${reasonId}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    ${groupBadge}
+                    <strong class="ms-2">${reasonName}</strong>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-reason">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small">Длительность, мин</label>
+                    <input type="number" class="form-control" name="durations"
+                           value="0" min="0" max="60">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small">Комментарий</label>
+                    <input type="text" class="form-control" name="comments"
+                           placeholder="" maxlength="255">
+                </div>
+            </div>
+        `;
+
+        reasonsList.appendChild(entry);
+        noReasonsMessage.style.display = 'none';
+        cardElement.classList.add('selected');
+
+        // Обработчик удаления
+        entry.querySelector('.remove-reason').addEventListener('click', function() {
+            entry.remove();
+            cardElement.classList.remove('selected');
+            if (reasonsList.children.length === 0) {
+                noReasonsMessage.style.display = 'block';
+            }
+        });
+    }
+
+    // Удаление существующих причин
+    document.querySelectorAll('.remove-reason').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const entry = this.closest('.deviation-entry');
+            const reasonId = entry.dataset.reasonId;
+            const card = document.querySelector(`.reason-card[data-reason-id="${reasonId}"]`);
+
+            entry.remove();
+            if (card) card.classList.remove('selected');
+
+            if (reasonsList.children.length === 0) {
+                noReasonsMessage.style.display = 'block';
+            }
+        });
+    });
+
+    // Поиск причин
+    const searchInput = document.getElementById('reason-search');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+
+        if (query.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(function() {
+            fetch(`{% url 'operator:reason_search' %}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    searchResults.innerHTML = '';
+
+                    if (data.reasons.length === 0) {
+                        searchResults.innerHTML = '<div class="list-group-item text-muted">Ничего не найдено</div>';
+                    } else {
+                        data.reasons.forEach(reason => {
+                            const item = document.createElement('button');
+                            item.type = 'button';
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <span class="badge me-2" style="background-color: ${reason.group_color}">
+                                    ${reason.group}
+                                </span>
+                                ${reason.name}
+                                <small class="text-muted">(${reason.code})</small>
+                            `;
+                            item.addEventListener('click', function() {
+                                // Создаём фиктивный card element
+                                const fakeCard = document.createElement('div');
+                                fakeCard.dataset.reasonId = reason.id;
+                                fakeCard.dataset.reasonName = reason.name;
+                                fakeCard.innerHTML = `<span class="reason-badge badge" style="background-color: ${reason.group_color}">${reason.group}</span>`;
+
+                                addReasonEntry(reason.id, reason.name, fakeCard);
+                                searchInput.value = '';
+                                searchResults.style.display = 'none';
+                            });
+                            searchResults.appendChild(item);
+                        });
+                    }
+
+                    searchResults.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    // Скрытие результатов при клике вне
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // Инициализация
+    updateDisplay();
+
+    // Отметка выбранных причин
+    reasonsList.querySelectorAll('.deviation-entry').forEach(entry => {
+        const reasonId = entry.dataset.reasonId;
+        const card = document.querySelector(`.reason-card[data-reason-id="${reasonId}"]`);
+        if (card) card.classList.add('selected');
+    });
+});
+</script>
+{% endblock %}

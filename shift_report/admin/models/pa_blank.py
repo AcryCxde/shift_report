@@ -132,6 +132,7 @@ class PABlankAdmin(admin.ModelAdmin):
     @admin.display(description='Выполнение')
     def completion_display(self, obj):
         percentage = obj.completion_percentage
+        formatted_percentage = f'{percentage:.1f}'
         if percentage >= 100:
             color = '#198754'  # green
         elif percentage >= 90:
@@ -140,9 +141,9 @@ class PABlankAdmin(admin.ModelAdmin):
             color = '#dc3545'  # red
 
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
+            '<span style="color: {}; font-weight: bold;">{}%</span>',
             color,
-            percentage
+            formatted_percentage
         )
 
     def save_model(self, request, obj, form, change):

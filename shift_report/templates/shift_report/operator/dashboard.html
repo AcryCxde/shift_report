@@ -1,0 +1,94 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Рабочее место — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+            <i class="bi bi-clipboard-data me-2"></i>
+            Мои бланки ПА
+        </h1>
+        <div class="text-muted">
+            <i class="bi bi-calendar3 me-1"></i>
+            {{ today|date:"d.m.Y" }}
+        </div>
+    </div>
+
+    {% if blanks %}
+    <div class="row g-4">
+        {% for blank in blanks %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm card-workplace">
+                <div class="card-header d-flex justify-content-between align-items-center
+                    {% if blank.completion_percentage >= 100 %}bg-success text-white
+                    {% elif blank.completion_percentage >= 90 %}bg-warning
+                    {% elif blank.completion_percentage > 0 %}bg-danger text-white
+                    {% else %}bg-secondary text-white{% endif %}">
+                    <span class="fw-bold">{{ blank.workplace.name }}</span>
+                    <span class="badge bg-light text-dark">
+                        {{ blank.shift.name }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ blank.product.name }}</h5>
+                    <p class="card-text text-muted small">
+                        {{ blank.product.article }}
+                    </p>
+
+                    <!-- Прогресс выполнения -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Выполнение</span>
+                            <span class="fw-bold">{{ blank.completion_percentage|floatformat:0 }}%</span>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar
+                                {% if blank.completion_percentage >= 100 %}bg-success
+                                {% elif blank.completion_percentage >= 90 %}bg-warning
+                                {% else %}bg-danger{% endif %}"
+                                role="progressbar"
+                                style="width: {{ blank.completion_percentage|floatformat:0 }}%">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Статистика -->
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="text-muted small">План</div>
+                            <div class="fw-bold text-xl">{{ blank.total_plan }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Факт</div>
+                            <div class="fw-bold text-xl">{{ blank.total_fact }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-muted small">Откл.</div>
+                            <div class="fw-bold text-xl
+                                {% if blank.total_deviation >= 0 %}text-success
+                                {% else %}text-danger{% endif %}">
+                                {% if blank.total_deviation >= 0 %}+{% endif %}{{ blank.total_deviation }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'operator:blank_detail' blank.pk %}"
+                       class="btn btn-primary w-100 btn-touch">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        Открыть
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        На сегодня нет активных бланков для вашего рабочего места.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
