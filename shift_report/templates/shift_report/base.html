@@ -150,7 +150,7 @@
 
                     {% if user.is_master or user.is_chief or user.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
+                        <a class="nav-link" href="{% url 'master:monitoring' %}">
                             <i class="bi bi-grid-3x3-gap me-1"></i>
                             Мониторинг
                         </a>
@@ -159,7 +159,7 @@
 
                     {% if user.is_chief or user.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
+                        <a class="nav-link" href="{% url 'analytics:dashboard' %}">
                             <i class="bi bi-graph-up me-1"></i>
                             Аналитика
                         </a>
@@ -168,7 +168,7 @@
 
                     {% if user.is_admin or user.is_superuser %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin:index' %}">
+                        <a class="nav-link" href="{% url 'shift_admin:dashboard' %}">
                             <i class="bi bi-gear me-1"></i>
                             Администрирование
                         </a>

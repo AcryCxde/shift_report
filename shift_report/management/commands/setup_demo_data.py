@@ -260,7 +260,8 @@ class Command(BaseCommand):
                 'first_name': 'Админ',
                 'last_name': 'Системы',
                 'role': 'admin',
-            }
+            },
+            is_staff=True,
         )
         if created:
             admin.set_pin('0000')

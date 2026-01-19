@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:14.8
+    container_name: shift_report_postgres
+    environment:
+      POSTGRES_DB: sh_r_test
+      POSTGRES_USER: sh_r_user
+      POSTGRES_PASSWORD: sh_r_pass
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sh_r_user", "-d", "sh_r_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    image: acrycxde/shift_report:v.1.0.3
+    container_name: shift_report_migrate
+    env_file:
+      - .env
+    command: uv run manage.py migrate --noinput
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  demo_data:
+    image: acrycxde/shift_report:v.1.0.3
+    container_name: shift_report_demo_data
+    env_file:
+      - .env
+    command: uv run manage.py setup_demo_data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  app:
+    image: acrycxde/shift_report:v.1.0.3
+    container_name: shift_report_app
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      demo_data:
+        condition: service_completed_successfully

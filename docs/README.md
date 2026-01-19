@@ -19,6 +19,8 @@ Django-приложение для оперативного учёта и ана
 
 > В корне проекта должен быть `.env`!
 
+> Для запуска итогового docker-compose: `docker-compose -f prod-compose.yml up`
+
 **! Проверить линтеры:** `pre-commit run --all-files`
 
 (если не работает, то сначала: `pre-commit install`)
