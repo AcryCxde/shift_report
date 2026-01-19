@@ -71,6 +71,10 @@ class MasterMonitoringView(MasterRequiredMixin, View):
 
         # Группируем по участкам
         sectors_data = {}
+        total_plan = 0
+        total_fact = 0
+        total_deviation = 0
+
         for blank in blanks:
             sector_id = blank.workplace.sector_id
             if sector_id not in sectors_data:
@@ -85,6 +89,11 @@ class MasterMonitoringView(MasterRequiredMixin, View):
             sectors_data[sector_id]['total_plan'] += blank.total_plan or 0
             sectors_data[sector_id]['total_fact'] += blank.total_fact or 0
             sectors_data[sector_id]['total_deviation'] += blank.total_deviation or 0
+
+            # Суммируем общие итоги
+            total_plan += blank.total_plan or 0
+            total_fact += blank.total_fact or 0
+            total_deviation += blank.total_deviation or 0
 
         # Рассчитываем процент выполнения для каждого участка
         for data in sectors_data.values():
@@ -116,6 +125,9 @@ class MasterMonitoringView(MasterRequiredMixin, View):
 
         return render(request, self.template_name, {
             'sectors_data': sectors_data,
+            'total_plan': total_plan,
+            'total_fact': total_fact,
+            'total_deviation': total_deviation,
             'today': today,
             'deviations_stats': deviations_stats,
             'current_sector': sector,

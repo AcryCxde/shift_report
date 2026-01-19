@@ -1,0 +1,168 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Администрирование — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="mb-4">
+        <h1 class="h3">
+            <i class="bi bi-gear me-2"></i>
+            Администрирование
+        </h1>
+        <p class="text-muted">Управление справочниками и данными системы</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Статистика справочников -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-database me-2"></i>
+                    Справочники системы
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'workshops' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.workshops }}</div>
+                                        <small class="text-muted">Цеха</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'sectors' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.sectors }}</div>
+                                        <small class="text-muted">Участки</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'workplaces' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.workplaces }}</div>
+                                        <small class="text-muted">Рабочие места</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'products' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.products }}</div>
+                                        <small class="text-muted">Продукция</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'shifts' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.shifts }}</div>
+                                        <small class="text-muted">Смены</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'deviation_groups' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.deviation_groups }}</div>
+                                        <small class="text-muted">Группы причин</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'deviation_reasons' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">{{ stats.deviation_reasons }}</div>
+                                        <small class="text-muted">Причины откл.</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:directory' 'employees' %}" class="text-decoration-none">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <div class="h3 text-primary mb-0">
+                                            {{ stats.employees_active }}/{{ stats.employees }}
+                                        </div>
+                                        <small class="text-muted">Сотрудники</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-lightning me-2"></i>
+                    Быстрые действия
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'shift_admin:import' %}" class="btn btn-primary">
+                            <i class="bi bi-upload me-2"></i>
+                            Импорт данных
+                        </a>
+                        <a href="{% url 'shift_admin:export' %}" class="btn btn-success">
+                            <i class="bi bi-download me-2"></i>
+                            Экспорт данных
+                        </a>
+                        <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+                            <i class="bi bi-gear-wide-connected me-2"></i>
+                            Django Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Инструкции -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header">
+            <i class="bi bi-info-circle me-2"></i>
+            Справка
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Импорт данных</h6>
+                    <p class="small text-muted">
+                        Для импорта подготовьте CSV-файл в кодировке UTF-8. 
+                        Скачайте шаблон для нужного справочника на странице импорта.
+                        Порядок импорта: цеха → участки → рабочие места → остальное.
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Экспорт данных</h6>
+                    <p class="small text-muted">
+                        Экспорт справочников и отчётов в формате CSV.
+                        Файлы открываются в Excel с корректной кодировкой.
+                        Доступны отчёты по бланкам и отклонениям.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

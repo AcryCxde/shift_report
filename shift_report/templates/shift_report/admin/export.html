@@ -1,0 +1,121 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Экспорт данных — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Заголовок -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="{% url 'shift_admin:dashboard' %}">Администрирование</a></li>
+                        <li class="breadcrumb-item active">Экспорт</li>
+                    </ol>
+                </nav>
+                <h1 class="h3">
+                    <i class="bi bi-download me-2"></i>
+                    Экспорт данных
+                </h1>
+            </div>
+
+            <div class="row g-4">
+                <!-- Экспорт справочников -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-database me-2"></i>
+                            Справочники
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Экспорт справочников системы в формате CSV</p>
+                            
+                            <div class="list-group list-group-flush">
+                                {% for value, label in export_models %}
+                                <form method="post" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="export_type" value="{{ value }}">
+                                    <span>{{ label }}</span>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                </form>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Экспорт отчётов -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                            Отчёты
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Экспорт отчётов за выбранный период</p>
+
+                            <!-- Отчёт по бланкам -->
+                            <form method="post" class="mb-4">
+                                {% csrf_token %}
+                                <input type="hidden" name="export_type" value="blanks_report">
+                                
+                                <h6>Отчёт по бланкам</h6>
+                                <div class="row g-2 mb-2">
+                                    <div class="col">
+                                        <input type="date" name="date_from" class="form-control form-control-sm"
+                                               value="{{ today|date:'Y-m-d' }}">
+                                    </div>
+                                    <div class="col-auto d-flex align-items-center">—</div>
+                                    <div class="col">
+                                        <input type="date" name="date_to" class="form-control form-control-sm"
+                                               value="{{ today|date:'Y-m-d' }}">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- Отчёт по отклонениям -->
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="export_type" value="deviations_report">
+                                
+                                <h6>Отчёт по отклонениям</h6>
+                                <div class="row g-2 mb-2">
+                                    <div class="col">
+                                        <input type="date" name="date_from" class="form-control form-control-sm"
+                                               value="{{ today|date:'Y-m-d' }}">
+                                    </div>
+                                    <div class="col-auto d-flex align-items-center">—</div>
+                                    <div class="col">
+                                        <input type="date" name="date_to" class="form-control form-control-sm"
+                                               value="{{ today|date:'Y-m-d' }}">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'shift_admin:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Назад
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

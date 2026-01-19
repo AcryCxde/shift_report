@@ -58,5 +58,21 @@ def mod(value, arg):
     """Возвращает остаток от деления value на arg"""
     try:
         return int(value) % int(arg)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return value
+
+
+@register.filter
+def hours_minutes(value):
+    """Преобразует минуты в формат 'X ч Y мин'"""
+    try:
+        hours = int(value) // 60
+        minutes = int(value) % 60
+        if hours > 0 and minutes > 0:
+            return f'{hours} ч {minutes} мин'
+        elif hours > 0:
+            return f'{hours} ч'
+        else:
+            return f'{minutes} мин'
     except (ValueError, TypeError):
         return value

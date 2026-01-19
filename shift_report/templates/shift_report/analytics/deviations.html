@@ -105,21 +105,27 @@
                     </p>
 
                     {% for item in pareto.data %}
-                    <div class="mb-2 position-relative">
+                    <div class="mb-2">
                         <div class="d-flex justify-content-between small mb-1">
                             <span>{{ item.reason_name }}</span>
                             <span>{{ item.duration }} мин ({{ item.percentage }}%)</span>
                         </div>
-                        <div class="progress" style="height: 24px;">
-                            <div class="progress-bar" 
-                                 style="width: {{ item.percentage }}%; background-color: {{ item.group_color }}">
+                        <div class="row g-0 align-items-center">
+                            <div class="col position-relative">
+                                <div class="progress" style="height: 24px;">
+                                    <div class="progress-bar"
+                                         style="width: {{ item.percentage }}%; background-color: {{ item.group_color }}">
+                                    </div>
+                                </div>
                             </div>
+                            {% if item.cumulative_percentage <= 80 %}
+                            <div class="col-auto ps-2">
+                                <small class="text-danger fw-bold">
+                                    Σ {{ item.cumulative_percentage }}%
+                                </small>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% if item.cumulative_percentage <= 80 %}
-                        <small class="text-danger position-absolute" style="right: 0; top: 0;">
-                            Σ {{ item.cumulative_percentage }}%
-                        </small>
-                        {% endif %}
                     </div>
                     {% empty %}
                     <p class="text-muted text-center">Нет данных</p>
@@ -128,7 +134,7 @@
                     {% if pareto.total_duration %}
                     <div class="alert alert-info mt-3 mb-0">
                         <strong>Общее время простоев:</strong> {{ pareto.total_duration }} мин
-                        ({{ pareto.total_duration|divisibleby:60 }} ч {{ pareto.total_duration|mod:60 }} мин)
+                        ({{ pareto.total_duration|hours_minutes }})
                     </div>
                     {% endif %}
                 </div>

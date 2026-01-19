@@ -91,17 +91,11 @@
 
     <!-- Сводная статистика -->
     <div class="row g-3 mb-4">
-        {% with total_plan=0 total_fact=0 total_deviation=0 %}
-        {% for sector_id, data in sectors_data.items %}
-            {% with total_plan=total_plan|add:data.total_plan total_fact=total_fact|add:data.total_fact total_deviation=total_deviation|add:data.total_deviation %}
-            {% endwith %}
-        {% endfor %}
-
         <div class="col-6 col-md-3">
             <div class="card stat-card bg-primary text-white">
                 <div class="card-body text-center">
                     <div class="h2 mb-0" id="stat-plan">
-                        {% for sector_id, data in sectors_data.items %}{% with p=data.total_plan %}{{ p|add:0 }}{% endwith %}{% endfor %}
+                        {{ total_plan }}
                     </div>
                     <small>План на смену</small>
                 </div>
@@ -111,7 +105,7 @@
             <div class="card stat-card bg-success text-white">
                 <div class="card-body text-center">
                     <div class="h2 mb-0" id="stat-fact">
-                        {% for sector_id, data in sectors_data.items %}{% with f=data.total_fact %}{{ f|add:0 }}{% endwith %}{% endfor %}
+                        {{ total_fact }}
                     </div>
                     <small>Факт</small>
                 </div>
@@ -121,7 +115,7 @@
             <div class="card stat-card bg-warning">
                 <div class="card-body text-center">
                     <div class="h2 mb-0" id="stat-deviation">
-                        {% for sector_id, data in sectors_data.items %}{% with d=data.total_deviation %}{{ d|add:0 }}{% endwith %}{% endfor %}
+                        {{ total_deviation }}
                     </div>
                     <small>Отклонение</small>
                 </div>
@@ -135,7 +129,6 @@
                 </div>
             </div>
         </div>
-        {% endwith %}
     </div>
 
     <!-- Топ причин отклонений -->

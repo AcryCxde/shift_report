@@ -142,7 +142,6 @@ class BlankCreateView(MasterRequiredMixin, View):
                     product=form.cleaned_data['product'],
                     planned_quantity=form.cleaned_data['planned_quantity'],
                     blank_type=blank_type,
-                    notes=form.cleaned_data.get('notes', ''),
                     created_by=request.user,
                 )
 

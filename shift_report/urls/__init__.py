@@ -29,4 +29,7 @@ urlpatterns = [
 
     # Аналитика и отчёты
     path('analytics/', include('shift_report.urls.analytics', namespace='analytics')),
+
+    # Администрирование
+    path('system/', include('shift_report.urls.admin_urls', namespace='shift_admin')),
 ]

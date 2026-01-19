@@ -1,0 +1,133 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Импорт данных — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Заголовок -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="{% url 'shift_admin:dashboard' %}">Администрирование</a></li>
+                        <li class="breadcrumb-item active">Импорт</li>
+                    </ol>
+                </nav>
+                <h1 class="h3">
+                    <i class="bi bi-upload me-2"></i>
+                    Импорт данных
+                </h1>
+            </div>
+
+            <!-- Форма импорта -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>
+                    Загрузка файла
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Тип данных</label>
+                            <select name="model_name" class="form-select form-select-lg" required>
+                                <option value="">Выберите тип...</option>
+                                {% for value, label in import_models %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">CSV-файл</label>
+                            <input type="file" name="csv_file" class="form-control form-control-lg"
+                                   accept=".csv" required>
+                            <div class="form-text">
+                                Файл должен быть в кодировке UTF-8 или Windows-1251
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="update_existing" id="update_existing"
+                                       class="form-check-input">
+                                <label for="update_existing" class="form-check-label">
+                                    Обновлять существующие записи
+                                </label>
+                                <div class="form-text">
+                                    Если отмечено, существующие записи будут обновлены данными из файла
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-upload me-2"></i>
+                            Импортировать
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Шаблоны -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    Шаблоны для импорта
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Скачайте шаблон CSV-файла для нужного справочника:
+                    </p>
+                    <div class="row g-2">
+                        {% for value, label in import_models %}
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <a href="{% url 'shift_admin:template' value %}" 
+                               class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="bi bi-download me-1"></i>
+                                {{ label }}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Инструкция -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header">
+                    <i class="bi bi-question-circle me-2"></i>
+                    Инструкция по импорту
+                </div>
+                <div class="card-body">
+                    <h6>Порядок импорта</h6>
+                    <ol class="small">
+                        <li>Сначала импортируйте <strong>Цеха</strong></li>
+                        <li>Затем <strong>Участки</strong> (требуют наличия цехов)</li>
+                        <li>Затем <strong>Рабочие места</strong> (требуют наличия участков)</li>
+                        <li><strong>Смены</strong>, <strong>Продукция</strong>, <strong>Группы причин</strong> — в любом порядке</li>
+                        <li><strong>Причины отклонений</strong> — после групп причин</li>
+                        <li><strong>Сотрудники</strong> — в конце (могут ссылаться на цеха, участки, РМ)</li>
+                    </ol>
+
+                    <h6 class="mt-3">Формат файла</h6>
+                    <ul class="small">
+                        <li>Первая строка — заголовки колонок</li>
+                        <li>Разделитель — запятая</li>
+                        <li>Кодировка — UTF-8 (рекомендуется) или Windows-1251</li>
+                        <li>Булевы значения: true/false</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'shift_admin:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Назад
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

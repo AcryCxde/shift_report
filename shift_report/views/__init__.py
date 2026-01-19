@@ -1,3 +1,5 @@
+from .admin_views import (AdminDashboardView, DirectoryListView, ExportView,
+                          ImportView, TemplateDownloadView)
 from .analytics import (ChartDataAPIView, ComparisonView, DashboardAPIView,
                         DashboardView, DeviationsAnalysisView, ReportsView)
 from .auth import ChangePINView, HomeView, LoginView, LogoutView, ProfileView
@@ -52,4 +54,11 @@ __all__ = [
     'ReportsView',
     'DashboardAPIView',
     'ChartDataAPIView',
+
+    # Admin
+    'AdminDashboardView',
+    'ImportView',
+    'ExportView',
+    'DirectoryListView',
+    'TemplateDownloadView',
 ]

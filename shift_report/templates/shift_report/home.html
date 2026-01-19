@@ -67,9 +67,7 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
 
-            {% if user.is_chief or user.is_admin %}
             <!-- Карточка аналитики -->
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm card-workplace">
@@ -99,9 +97,9 @@
                         </div>
                         <h2 class="h4">Администрирование</h2>
                         <p class="text-muted">
-                            Настройка системы и справочников
+                            Импорт/экспорт, справочники
                         </p>
-                        <a href="{% url 'admin:index' %}" class="btn btn-secondary btn-touch stretched-link">
+                        <a href="{% url 'shift_admin:dashboard' %}" class="btn btn-secondary btn-touch stretched-link">
                             Перейти
                         </a>
                     </div>
@@ -139,7 +137,6 @@
 
 {% block extra_js %}
 <script>
-// Обновление времени
 function updateTime() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
