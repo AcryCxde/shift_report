@@ -1,0 +1,162 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Отчёты — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'analytics:dashboard' %}">Аналитика</a></li>
+                <li class="breadcrumb-item active">Отчёты</li>
+            </ol>
+        </nav>
+        <h1 class="h3">
+            <i class="bi bi-file-earmark-text me-2"></i>
+            Отчёты
+        </h1>
+    </div>
+
+    <div class="row g-4">
+        <!-- Оперативные отчёты -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-clock me-2"></i>
+                    Оперативные отчёты
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Сменный отчёт</strong>
+                                <br>
+                                <small class="text-muted">Итоги выполнения плана за смену</small>
+                            </div>
+                            <span class="badge bg-primary">Скоро</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Суточный отчёт</strong>
+                                <br>
+                                <small class="text-muted">Сводка по всем сменам за сутки</small>
+                            </div>
+                            <span class="badge bg-primary">Скоро</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Отчёт об отклонениях</strong>
+                                <br>
+                                <small class="text-muted">Детальный список отклонений за период</small>
+                            </div>
+                            <span class="badge bg-primary">Скоро</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Аналитические отчёты -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Аналитические отчёты
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Анализ эффективности РМ</strong>
+                                <br>
+                                <small class="text-muted">Сравнительный анализ рабочих мест</small>
+                            </div>
+                            <span class="badge bg-success">Скоро</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Парето-анализ причин</strong>
+                                <br>
+                                <small class="text-muted">Выявление ключевых причин простоев</small>
+                            </div>
+                            <span class="badge bg-success">Скоро</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Тренды выполнения плана</strong>
+                                <br>
+                                <small class="text-muted">Динамика показателей за период</small>
+                            </div>
+                            <span class="badge bg-success">Скоро</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экспорт данных -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-download me-2"></i>
+                    Экспорт данных
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-file-earmark-excel display-4 text-success mb-3"></i>
+                                    <h5>Экспорт в Excel</h5>
+                                    <p class="text-muted small">
+                                        Выгрузка данных бланков и отклонений
+                                    </p>
+                                    <button class="btn btn-outline-success" disabled>
+                                        Скоро
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-file-earmark-pdf display-4 text-danger mb-3"></i>
+                                    <h5>Экспорт в PDF</h5>
+                                    <p class="text-muted small">
+                                        Формирование печатных отчётов
+                                    </p>
+                                    <button class="btn btn-outline-danger" disabled>
+                                        Скоро
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-filetype-csv display-4 text-info mb-3"></i>
+                                    <h5>Экспорт в CSV</h5>
+                                    <p class="text-muted small">
+                                        Данные для внешних систем
+                                    </p>
+                                    <button class="btn btn-outline-info" disabled>
+                                        Скоро
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'analytics:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>
+            Назад к дашборду
+        </a>
+    </div>
+</div>
+{% endblock %}

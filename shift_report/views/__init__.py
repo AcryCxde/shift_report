@@ -1,3 +1,5 @@
+from .analytics import (ChartDataAPIView, ComparisonView, DashboardAPIView,
+                        DashboardView, DeviationsAnalysisView, ReportsView)
 from .auth import ChangePINView, HomeView, LoginView, LogoutView, ProfileView
 from .blanks import (BlankBulkCreateView, BlankCreateView, BlankDeleteView,
                      BlankDetailView, BlankListView, CalculatePlanAPIView,
@@ -42,4 +44,12 @@ __all__ = [
     'TemplateDeleteView',
     'WorkplaceAPIView',
     'CalculatePlanAPIView',
+
+    # Analytics
+    'DashboardView',
+    'DeviationsAnalysisView',
+    'ComparisonView',
+    'ReportsView',
+    'DashboardAPIView',
+    'ChartDataAPIView',
 ]

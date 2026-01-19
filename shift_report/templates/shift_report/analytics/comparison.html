@@ -1,0 +1,241 @@
+{% extends 'shift_report/base.html' %}
+
+{% block title %}Сравнительный анализ — Производственный анализ{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'analytics:dashboard' %}">Аналитика</a></li>
+                    <li class="breadcrumb-item active">Сравнительный анализ</li>
+                </ol>
+            </nav>
+            <h1 class="h3">
+                <i class="bi bi-bar-chart-steps me-2"></i>
+                Сравнительный анализ
+            </h1>
+        </div>
+
+        <form method="get" class="d-flex align-items-center gap-2">
+            <select name="compare_by" class="form-select" onchange="this.form.submit()">
+                <option value="workplace" {% if compare_by == 'workplace' %}selected{% endif %}>По рабочим местам</option>
+                <option value="shift" {% if compare_by == 'shift' %}selected{% endif %}>По сменам</option>
+            </select>
+            <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control">
+            <span>—</span>
+            <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-filter"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <!-- Таблица сравнения -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-table me-2"></i>
+                    {% if compare_by == 'shift' %}Сравнение по сменам{% else %}Сравнение по рабочим местам{% endif %}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                {% if compare_by == 'shift' %}
+                                <th>Смена</th>
+                                {% else %}
+                                <th>Рабочее место</th>
+                                <th>Участок</th>
+                                {% endif %}
+                                <th class="text-center">Бланков</th>
+                                <th class="text-center">План</th>
+                                <th class="text-center">Факт</th>
+                                <th class="text-center">Отклонение</th>
+                                <th class="text-center">Выполнение</th>
+                                <th style="width: 200px;">Прогресс</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in comparison_data %}
+                            <tr>
+                                {% if compare_by == 'shift' %}
+                                <td><strong>{{ item.shift_name }}</strong></td>
+                                {% else %}
+                                <td><strong>{{ item.workplace_name }}</strong></td>
+                                <td>{{ item.sector_name }}</td>
+                                {% endif %}
+                                <td class="text-center">{{ item.blanks_count }}</td>
+                                <td class="text-center">{{ item.total_plan }}</td>
+                                <td class="text-center">{{ item.total_fact }}</td>
+                                <td class="text-center 
+                                    {% if item.total_deviation >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if item.total_deviation >= 0 %}+{% endif %}{{ item.total_deviation }}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge fs-6
+                                        {% if item.completion >= 100 %}bg-success
+                                        {% elif item.completion >= 90 %}bg-warning text-dark
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ item.completion }}%
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar 
+                                            {% if item.completion >= 100 %}bg-success
+                                            {% elif item.completion >= 90 %}bg-warning
+                                            {% else %}bg-danger{% endif %}"
+                                            style="width: {% if item.completion > 100 %}100{% else %}{{ item.completion }}{% endif %}%">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="{% if compare_by == 'shift' %}7{% else %}8{% endif %}" 
+                                    class="text-center text-muted">
+                                    Нет данных за выбранный период
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Почасовой паттерн -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-clock me-2"></i>
+                    Почасовой паттерн выполнения
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+
+                    <hr>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Час</th>
+                                    {% for item in hourly_pattern %}
+                                    <th class="text-center">{{ item.hour }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Ср. план</td>
+                                    {% for item in hourly_pattern %}
+                                    <td class="text-center">{{ item.avg_plan }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td>Ср. факт</td>
+                                    {% for item in hourly_pattern %}
+                                    <td class="text-center">{{ item.avg_fact }}</td>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    <td>Выполнение</td>
+                                    {% for item in hourly_pattern %}
+                                    <td class="text-center 
+                                        {% if item.completion >= 100 %}text-success
+                                        {% elif item.completion >= 90 %}text-warning
+                                        {% else %}text-danger{% endif %}">
+                                        {{ item.completion }}%
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'analytics:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>
+            Назад к дашборду
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const hourlyData = {{ hourly_pattern|safe }};
+
+    if (hourlyData.length > 0) {
+        const ctx = document.getElementById('hourlyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hourlyData.map(d => d.hour + '-й час'),
+                datasets: [
+                    {
+                        label: 'Ср. план',
+                        data: hourlyData.map(d => d.avg_plan),
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                    },
+                    {
+                        label: 'Ср. факт',
+                        data: hourlyData.map(d => d.avg_fact),
+                        borderColor: 'rgba(25, 135, 84, 1)',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(context) {
+                                const idx = context[0].dataIndex;
+                                return `Выполнение: ${hourlyData[idx].completion}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)',
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

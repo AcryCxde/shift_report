@@ -1,0 +1,308 @@
+{% extends 'shift_report/base.html' %}
+{% load static %}
+
+{% block title %}Аналитика — Производственный анализ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 12px;
+        border: none;
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    .deviation-bar {
+        height: 24px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+    }
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 16px;
+    }
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        margin-right: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-graph-up me-2"></i>
+                Аналитика
+            </h1>
+            <p class="text-muted mb-0">
+                {% if current_sector %}{{ current_sector.name }}{% elif current_workshop %}{{ current_workshop.name }}{% else %}Все подразделения{% endif %}
+            </p>
+        </div>
+
+        <!-- Фильтр по датам -->
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control">
+            <span>—</span>
+            <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-filter"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- Сводные карточки -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="stat-value">{{ summary.total_plan|default:0 }}</div>
+                    <div class="small opacity-75">План</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="stat-value">{{ summary.total_fact|default:0 }}</div>
+                    <div class="small opacity-75">Факт</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card {% if summary.completion_percentage >= 100 %}bg-success{% elif summary.completion_percentage >= 90 %}bg-warning{% else %}bg-danger{% endif %} text-white h-100">
+                <div class="card-body">
+                    <div class="stat-value">{{ summary.completion_percentage|floatformat:1 }}%</div>
+                    <div class="small opacity-75">Выполнение</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="stat-value">{{ summary.deviations_count|default:0 }}</div>
+                    <div class="small opacity-75">Отклонений</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- График динамики -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-bar-chart me-2"></i>
+                        Динамика выполнения
+                    </span>
+                    <div class="legend-item">
+                        <span class="legend-color bg-primary"></span> План
+                        <span class="legend-color bg-success ms-3"></span> Факт
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="dynamicsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Причины отклонений -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Причины отклонений
+                </div>
+                <div class="card-body">
+                    {% if deviations_by_category %}
+                    {% for item in deviations_by_category %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>
+                                <span class="badge" style="background-color: {{ item.group_color }}">
+                                    {{ item.group_name }}
+                                </span>
+                            </span>
+                            <span>{{ item.count }} ({{ item.percentage }}%)</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" 
+                                 style="width: {{ item.percentage }}%; background-color: {{ item.group_color }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted text-center">Нет данных об отклонениях</p>
+                    {% endif %}
+
+                    <a href="{% url 'analytics:deviations' %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" 
+                       class="btn btn-outline-primary btn-sm w-100 mt-3">
+                        Подробный анализ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вторая строка -->
+    <div class="row g-4 mt-2">
+        <!-- Топ отклонений -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Топ-5 причин отклонений
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Причина</th>
+                                <th class="text-center">Кол-во</th>
+                                <th class="text-center">Время</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in top_deviations %}
+                            <tr>
+                                <td>
+                                    <span class="badge me-1" style="background-color: {{ item.group_color }}">
+                                        {{ item.group_name }}
+                                    </span>
+                                    {{ item.reason_name }}
+                                </td>
+                                <td class="text-center">{{ item.count }}</td>
+                                <td class="text-center">{{ item.duration }} мин</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Нет данных</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые ссылки -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-lightning me-2"></i>
+                    Быстрый доступ
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <a href="{% url 'analytics:deviations' %}" class="btn btn-outline-danger w-100 py-3">
+                                <i class="bi bi-exclamation-triangle d-block fs-3 mb-1"></i>
+                                Анализ отклонений
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'analytics:comparison' %}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="bi bi-bar-chart-steps d-block fs-3 mb-1"></i>
+                                Сравнение РМ
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'analytics:comparison' %}?compare_by=shift" class="btn btn-outline-info w-100 py-3">
+                                <i class="bi bi-clock-history d-block fs-3 mb-1"></i>
+                                Сравнение смен
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'analytics:reports' %}" class="btn btn-outline-secondary w-100 py-3">
+                                <i class="bi bi-file-earmark-text d-block fs-3 mb-1"></i>
+                                Отчёты
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Данные для графика
+    const dailyData = {{ daily_dynamics|safe }};
+
+    const ctx = document.getElementById('dynamicsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dailyData.map(d => d.date_display),
+            datasets: [
+                {
+                    label: 'План',
+                    data: dailyData.map(d => d.plan),
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Факт',
+                    data: dailyData.map(d => d.fact),
+                    backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            const idx = context[0].dataIndex;
+                            return `Выполнение: ${dailyData[idx].completion}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)',
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false,
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

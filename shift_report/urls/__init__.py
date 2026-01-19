@@ -27,6 +27,6 @@ urlpatterns = [
     # Управление бланками
     path('blanks/', include('shift_report.urls.blanks', namespace='blanks')),
 
-    # Модули будут добавлены в следующих этапах:
-    # path('analytics/', include('shift_report.urls.analytics', namespace='analytics')),
+    # Аналитика и отчёты
+    path('analytics/', include('shift_report.urls.analytics', namespace='analytics')),
 ]

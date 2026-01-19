@@ -51,3 +51,12 @@ def user_can_access(user, *roles):
         return True
 
     return user.role in roles
+
+
+@register.filter
+def mod(value, arg):
+    """Возвращает остаток от деления value на arg"""
+    try:
+        return int(value) % int(arg)
+    except (ValueError, TypeError):
+        return value

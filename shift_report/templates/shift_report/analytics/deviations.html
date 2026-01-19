@@ -1,0 +1,230 @@
+{% extends 'shift_report/base.html' %}
+{% load role_tags %}
+
+{% block title %}Анализ отклонений — Производственный анализ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pareto-bar {
+        height: 30px;
+        transition: all 0.3s;
+    }
+    .pareto-bar:hover {
+        opacity: 0.8;
+    }
+    .cumulative-line {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        border-left: 2px dashed #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'analytics:dashboard' %}">Аналитика</a></li>
+                    <li class="breadcrumb-item active">Анализ отклонений</li>
+                </ol>
+            </nav>
+            <h1 class="h3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Анализ отклонений
+            </h1>
+        </div>
+
+        <form method="get" class="d-flex align-items-center gap-2">
+            <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control">
+            <span>—</span>
+            <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-filter"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <!-- По категориям -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    Распределение по категориям
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+
+                    <hr>
+
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Категория</th>
+                                <th class="text-center">Кол-во</th>
+                                <th class="text-center">Время</th>
+                                <th class="text-center">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in deviations_by_category %}
+                            <tr>
+                                <td>
+                                    <span class="badge" style="background-color: {{ item.group_color }}">
+                                        {{ item.group_name }}
+                                    </span>
+                                </td>
+                                <td class="text-center">{{ item.count }}</td>
+                                <td class="text-center">{{ item.duration }} мин</td>
+                                <td class="text-center">{{ item.percentage }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Диаграмма Парето -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-line me-2"></i>
+                    Диаграмма Парето (по времени простоя)
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        80% простоев вызваны 20% причин. Сосредоточьтесь на топ причинах.
+                    </p>
+
+                    {% for item in pareto.data %}
+                    <div class="mb-2 position-relative">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>{{ item.reason_name }}</span>
+                            <span>{{ item.duration }} мин ({{ item.percentage }}%)</span>
+                        </div>
+                        <div class="progress" style="height: 24px;">
+                            <div class="progress-bar" 
+                                 style="width: {{ item.percentage }}%; background-color: {{ item.group_color }}">
+                            </div>
+                        </div>
+                        {% if item.cumulative_percentage <= 80 %}
+                        <small class="text-danger position-absolute" style="right: 0; top: 0;">
+                            Σ {{ item.cumulative_percentage }}%
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">Нет данных</p>
+                    {% endfor %}
+
+                    {% if pareto.total_duration %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <strong>Общее время простоев:</strong> {{ pareto.total_duration }} мин
+                        ({{ pareto.total_duration|divisibleby:60 }} ч {{ pareto.total_duration|mod:60 }} мин)
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Топ причин -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header">
+            <i class="bi bi-list-ol me-2"></i>
+            Детальный список причин
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Категория</th>
+                        <th>Причина</th>
+                        <th>Код</th>
+                        <th class="text-center">Количество</th>
+                        <th class="text-center">Время простоя</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in top_deviations %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <span class="badge" style="background-color: {{ item.group_color }}">
+                                {{ item.group_name }}
+                            </span>
+                        </td>
+                        <td>{{ item.reason_name }}</td>
+                        <td><code>{{ item.reason_code }}</code></td>
+                        <td class="text-center">{{ item.count }}</td>
+                        <td class="text-center">{{ item.duration }} мин</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Нет данных об отклонениях</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'analytics:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>
+            Назад к дашборду
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryData = {{ deviations_by_category|safe }};
+
+    if (categoryData.length > 0) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: categoryData.map(d => d.group_name),
+                datasets: [{
+                    data: categoryData.map(d => d.count),
+                    backgroundColor: categoryData.map(d => d.group_color),
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const item = categoryData[context.dataIndex];
+                                return `${item.group_name}: ${item.count} (${item.percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
