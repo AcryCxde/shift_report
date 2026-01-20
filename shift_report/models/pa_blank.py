@@ -259,11 +259,50 @@ class PABlank(Model):
         return self.status in [PABlankStatus.DRAFT, PABlankStatus.ACTIVE]
 
     @property
+    def current_completion_percentage(self):
+        """
+        Процент выполнения на текущий момент времени.
+
+        Сравнивает фактический результат с планом за прошедшие часы,
+        а не со всем планом на смену.
+        """
+        from django.utils import timezone
+
+        now = timezone.localtime()
+        current_time = now.time()
+
+        # Если бланк не на сегодня, возвращаем общий процент
+        if self.date != now.date():
+            return self.completion_percentage
+
+        # Находим все записи, которые уже должны были завершиться
+        completed_records = self.records.filter(
+            end_time__lte=current_time
+        ).aggregate(
+            plan=Sum('planned_quantity'),
+            fact=Sum('actual_quantity')
+        )
+
+        cumulative_plan = completed_records['plan'] or 0
+        cumulative_fact = completed_records['fact'] or 0
+
+        # Если ещё не прошло ни одного часа
+        if cumulative_plan == 0:
+            return Decimal('0.00')
+
+        # Процент выполнения за прошедшие часы
+        current_percentage = (Decimal(cumulative_fact) / Decimal(cumulative_plan)) * 100
+
+        return round(current_percentage, 2)
+
+    @property
     def status_color(self):
         """Цвет статуса для UI (BR-004)"""
-        if self.completion_percentage >= 100:
+        percentage = self.current_completion_percentage
+
+        if percentage >= 100:
             return 'success'  # Зелёный
-        elif self.completion_percentage >= 90:
+        elif percentage >= 90:
             return 'warning'  # Жёлтый
         else:
             return 'danger'  # Красный

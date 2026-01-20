@@ -169,6 +169,37 @@ class PARecord(Model):
                     ])
 
     @property
+    def is_current_hour(self):
+        """Является ли эта запись текущим часом"""
+        from django.utils import timezone
+
+        now = timezone.localtime()
+
+        # Проверяем дату
+        if self.blank.date != now.date():
+            return False
+
+        # Проверяем время
+        current_time = now.time()
+        return self.start_time <= current_time <= self.end_time
+
+    @property
+    def is_past_hour(self):
+        """Прошёл ли этот час"""
+        from django.utils import timezone
+
+        now = timezone.localtime()
+
+        # Если бланк не на сегодня
+        if self.blank.date < now.date():
+            return True
+        elif self.blank.date > now.date():
+            return False
+
+        # Если сегодня - проверяем время
+        return now.time() > self.end_time
+
+    @property
     def status_color(self):
         """Цвет статуса для UI (BR-004)"""
         if not self.is_filled:

@@ -182,16 +182,18 @@
                     <div class="card workplace-card h-100"
                          onclick="window.location='{% url 'master:blank_monitor' blank.pk %}'"
                          data-blank-id="{{ blank.pk }}">
+                        <!-- ИЗМЕНЕНО: используем current_completion_percentage вместо completion_percentage -->
                         <div class="card-header py-2 d-flex justify-content-between align-items-center
-                            {% if blank.completion_percentage >= 100 %}bg-success text-white
-                            {% elif blank.completion_percentage >= 90 %}bg-warning
-                            {% elif blank.completion_percentage > 0 %}bg-danger text-white
+                            {% if blank.current_completion_percentage >= 100 %}bg-success text-white
+                            {% elif blank.current_completion_percentage >= 90 %}bg-warning
+                            {% elif blank.current_completion_percentage > 0 %}bg-danger text-white
                             {% else %}bg-secondary text-white{% endif %}">
                             <span class="fw-bold">{{ blank.workplace.name }}</span>
+                            <!-- ИЗМЕНЕНО: индикатор также на основе current_completion_percentage -->
                             <span class="status-indicator
-                                {% if blank.completion_percentage >= 100 %}success
-                                {% elif blank.completion_percentage >= 90 %}warning
-                                {% elif blank.completion_percentage > 0 %}danger
+                                {% if blank.current_completion_percentage >= 100 %}success
+                                {% elif blank.current_completion_percentage >= 90 %}warning
+                                {% elif blank.current_completion_percentage > 0 %}danger
                                 {% else %}secondary{% endif %}">
                             </span>
                         </div>
@@ -200,14 +202,14 @@
                                 {{ blank.product.article }}
                             </div>
 
-                            <!-- Прогресс -->
+                            <!-- Прогресс - ИЗМЕНЕНО: используем current_completion_percentage -->
                             <div class="progress progress-thick mb-2">
                                 <div class="progress-bar
-                                    {% if blank.completion_percentage >= 100 %}bg-success
-                                    {% elif blank.completion_percentage >= 90 %}bg-warning
+                                    {% if blank.current_completion_percentage >= 100 %}bg-success
+                                    {% elif blank.current_completion_percentage >= 90 %}bg-warning
                                     {% else %}bg-danger{% endif %}"
-                                    style="width: {{ blank.completion_percentage|floatformat:0 }}%">
-                                    {{ blank.completion_percentage|floatformat:0 }}%
+                                    style="width: {{ blank.current_completion_percentage|floatformat:0 }}%">
+                                    {{ blank.current_completion_percentage|floatformat:0 }}%
                                 </div>
                             </div>
 
@@ -270,6 +272,7 @@ function refreshData() {
                     // Обновляем прогресс-бар
                     const progressBar = card.querySelector('.progress-bar');
                     if (progressBar) {
+                        // ИЗМЕНЕНО: используем completion из API (который теперь должен возвращать current_completion_percentage)
                         progressBar.style.width = blank.completion + '%';
                         progressBar.textContent = Math.round(blank.completion) + '%';
 
