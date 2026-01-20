@@ -262,6 +262,7 @@ class Command(BaseCommand):
                 'role': 'admin',
             },
             is_staff=True,
+            is_superuser=True,
         )
         if created:
             admin.set_pin('0000')
