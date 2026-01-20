@@ -406,7 +406,7 @@ class MonitoringAPIView(MasterRequiredMixin, View):
                 'total_plan': blank.total_plan,
                 'total_fact': blank.total_fact,
                 'total_deviation': blank.total_deviation,
-                'completion': float(blank.completion_percentage),
+                'completion': float(blank.current_completion_percentage),  # ИЗМЕНЕНО: используем current_completion_percentage
                 'status': blank.status,
             })
 
@@ -440,7 +440,7 @@ class BlankStatusAPIView(MasterRequiredMixin, View):
                 'total_plan': blank.total_plan,
                 'total_fact': blank.total_fact,
                 'total_deviation': blank.total_deviation,
-                'completion': float(blank.completion_percentage),
+                'completion': float(blank.current_completion_percentage),  # ИЗМЕНЕНО: используем current_completion_percentage
                 'status': blank.status,
             },
             'records': records_data,

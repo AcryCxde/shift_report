@@ -24,9 +24,30 @@ class HomeView(View):
         if not request.user.is_authenticated:
             return redirect('login')
 
-        return render(request, self.template_name, {
-            'user': request.user
-        })
+        user = request.user
+
+        # Маршрутизация по ролям (FR-002)
+        if user.is_superuser or user.is_admin:
+            # Администратор → панель администрирования
+            return redirect('shift_admin:dashboard')
+
+        elif user.is_chief:
+            # Начальник цеха → мониторинг
+            return redirect('master:monitoring')
+
+        elif user.is_master:
+            # Мастер → мониторинг своего участка
+            return redirect('master:monitoring')
+
+        elif user.is_operator:
+            # Оператор → панель внесения данных
+            return redirect('operator:dashboard')
+
+        else:
+            # Неопределённая роль → отображаем главную страницу
+            return render(request, self.template_name, {
+                'user': user
+            })
 
 
 class LoginView(View):
@@ -84,7 +105,17 @@ class LoginView(View):
                 if next_url:
                     return redirect(next_url)
 
-                return redirect('home')
+                # ИСПРАВЛЕНО: Перенаправление по ролям
+                if user.is_superuser or user.is_admin:
+                    return redirect('shift_admin:dashboard')
+                elif user.is_chief:
+                    return redirect('master:monitoring')
+                elif user.is_master:
+                    return redirect('master:monitoring')
+                elif user.is_operator:
+                    return redirect('operator:dashboard')
+                else:
+                    return redirect('home')
             else:
                 messages.error(
                     request,
